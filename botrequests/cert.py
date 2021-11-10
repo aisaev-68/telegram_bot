@@ -16,7 +16,7 @@ def create_cert(url):
         cert.get_subject().L = "Mackhachkala"   #  указываем свои данные
         cert.get_subject().O = "xazrad"   #  указываем свои данные
         cert.get_subject().OU = "xazrad"   #  указываем свои данные
-        cert.get_subject().CN = '127.0.0.1'   #  указываем свои данные
+        cert.get_subject().CN = url   #  указываем свои данные
         cert.set_serial_number(1000)
         cert.gmtime_adj_notBefore(0)
         cert.gmtime_adj_notAfter(10*365*24*60*60)   #  срок "жизни" сертификата
