@@ -19,7 +19,7 @@ WEBHOOK_PORT = 443
 TOKEN = os.environ.get('TELEGRAM_API_TOKEN')
 
 NGTOKEN = os.environ.get('TOKEN_NGROK')
-ngrok.set_auth_token(NGTOKEN)
+
 ngrok.connect()
 ngrok.set_auth_token(NGTOKEN)
 ngrok_tunnels = ngrok.get_tunnels()
