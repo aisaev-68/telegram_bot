@@ -6,4 +6,6 @@ python-dotenv==0.19.1
 requests==2.26.0
 urllib3==1.26.7
 idna==3.3
+telegram-bot-calendar==1.0.5
+telebot-calendar==1.2
 
