@@ -224,3 +224,4 @@ def inline(c):
     else:
         txt = lowprice.low_price(data)
         bot.send_message(chat_id=data['chat_id'], text=txt)
+
