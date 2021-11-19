@@ -2,7 +2,7 @@ from . import lowprice
 import requests
 import json
 import re
-from telegram_bot_calendar import WMonthTelegramCalendar, DAY
+from .myclass import MyStyleCalendar, PhotoYesNo, InlKbPhoto
 from dotenv import dotenv_values
 from telebot import TeleBot, types
 
@@ -20,10 +20,7 @@ LSTEP = {
 }
 
 
-class MyStyleCalendar(WMonthTelegramCalendar):
-    prev_button = "⬅️"
-    next_button = "➡️"
-    first_step = DAY
+
 
 
 def local_leng(txt: str) -> str:
@@ -38,7 +35,19 @@ def local_leng(txt: str) -> str:
         return "en_US"
 
 
-def req(url, headers, querystring):
+def req(url, querystring):
+    """
+    Функция возвращает данные запроса к API гостиниц.
+    :param url: страница поиска
+    :param querystring: срока запроса
+    :param headers: Словарь заголовков HTTP для отправки с помощью `Request`.
+    :return data: возвращаемы данные
+    """
+
+    headers = {
+        'x-rapidapi-host': "hotels4.p.rapidapi.com",
+        'x-rapidapi-key': config['RAPID_API_KEY']
+    }
     response = requests.request("GET", url, headers=headers, params=querystring)
     if response.status_code == 200:
         data = json.loads(response.text)
@@ -49,19 +58,15 @@ def req(url, headers, querystring):
 
 def get_city_id(querystring: dict) -> str:
     """
-    Функция возвращает ID города.Если город не найден,  возвращает пустую строку.
+    Функция возвращает ID города. Если город не найден, возвращает пустую строку.
     :param txt: название города, введённое пользователем бота
     :param local: язык поиска
     :return destination_id: id города
     """
 
-    url = "https://hotels4.p.rapidapi.com/locations/search"
-    headers = {
-        'x-rapidapi-host': "hotels4.p.rapidapi.com",
-        'x-rapidapi-key': config['RAPID_API_KEY']
-    }
+    url = config['URL']
 
-    result_locations_search = req(url, headers, querystring)
+    result_locations_search = req(url, querystring)
     destination_id = None
     for group in result_locations_search['suggestions']:
         if group['group'] == 'CITY_GROUP':
@@ -71,17 +76,17 @@ def get_city_id(querystring: dict) -> str:
     return destination_id
 
 
-def get_photos(id):
-    url = "https://hotels4.p.rapidapi.com/properties/get-hotel-photos"
+def get_photos(id_photo):
+    """
+    Функция возвращает ID города. Если город не найден, возвращает пустую строку.
+    :param id_photo: название города, введённое пользователем бота
+    :param local: язык поиска
+    :return destination_id: id города
+    """
 
-    querystring = {"id": f"{id}"}
-
-    headers = {
-        'x-rapidapi-host': "hotels4.p.rapidapi.com",
-        'x-rapidapi-key': config['RAPID_API_KEY']
-    }
-
-    response = requests.request("GET", url, headers=headers, params=querystring)
+    url = config['URL_PHOTOS']
+    querystring = {"id": f"{id_photo}"}
+    response = req(url, querystring)
     data_photo = json.loads(response.text)
 
     with open('get_hotel_photos.json', 'w', encoding='utf-8') as file:
@@ -92,7 +97,8 @@ def get_photos(id):
 
 def next_step_city(mess, chat_id):
     """
-    Ф-ция проверки на корректность ввода названия города.
+    Функция проверки на корректность ввода названия города.
+    В случае корректного ввода города прелагает ввести дату въезда в гостиницу.
     :param mess: объект входящего сообщения от пользователя
     """
     data['chat_id'] = chat_id
@@ -115,31 +121,24 @@ def next_step_city(mess, chat_id):
             data['destinationId'] = idcity
             bot.send_message(mess.chat.id,
                              "Выберите дату въезда",
-                             reply_markup=gen_markup())
+                             reply_markup=MyStyleCalendar(calendar_id=1).build()[0])
         else:
             data.clear()
             bot.send_message(mess.chat.id, "Такой город не найден. Повторите поиск.")
             msg = bot.send_message(mess.from_user.id, 'В каком городе будем искать?')
             bot.register_next_step_handler(msg, next_step_city)
-        print('я тут')
-
-
-def gen_markup():
-    calendar, step = MyStyleCalendar(calendar_id=1).build()
-    return calendar
 
 
 def next_step_date(m):
-    calendar, step = MyStyleCalendar(calendar_id=1).build()
     bot.send_message(m.chat.id,
                      "Выберите дату выезда",
-                     reply_markup=calendar)
+                     reply_markup=MyStyleCalendar(calendar_id=1).build()[0])
 
 
 def next_step_count_hotels(mess):
     """
-    Ф-ция проверки на корректность ввода кол-ва искомых отелей в городе.
-    В случае положительного ответа, вызываем ф-цию range_request_price.
+    Функция проверки на корректность ввода количества отелей в городе.
+    В случае положительного ответа, вызываем функцию 'range_request_price'.
     :param mess: объект входящего сообщения от пользователя
     """
 
@@ -154,27 +153,13 @@ def next_step_count_hotels(mess):
 
         else:
             data['pageSize'] = int(mess.text)
-        request_photo(mess)
-
-
-def request_photo(mess):
-    """
-    Ф-ция отправляющая кнопки с вопросом будем ли искать фото?
-    :param mess: объект входящего сообщения от пользователя
-    """
-
-    markup = types.InlineKeyboardMarkup()
-    yes_photo_hotels = types.InlineKeyboardButton(text='✅Да', callback_data='yes_photo')
-    no_photo_hotels = types.InlineKeyboardButton(text='❌Нет', callback_data='no_photo')
-    markup.add(yes_photo_hotels, no_photo_hotels)
-    bot.send_message(mess.chat.id, "Показать фотографии отелей?", reply_markup=markup)
+        bot.send_message(mess.chat.id, "Показать фотографии отелей?", reply_markup=PhotoYesNo().get_photo_yes_no())
 
 
 def next_step_count_photo(mess):
     """
-    Ф-ция проверки на корректность ввода пользователем кол-ва отображаемых изображений с отелями.
+    Функция проверки на корректность ввода количества отображаемых изображений с отелями.
     :param mess: объект входящего сообщения от пользователя
-
     """
 
     if not isinstance(mess.text, str) or not mess.text.isdigit():
@@ -192,36 +177,49 @@ def next_step_count_photo(mess):
         bot.send_message(chat_id=data['chat_id'], text=txt)
 
 
-@bot.callback_query_handler(func=MyStyleCalendar.func(calendar_id=1))
-def cal(c):
-    result, key, step = MyStyleCalendar(calendar_id=1).process(c.data)
-    if result:
-        bot.edit_message_text(f"Выбрана дата {result}",
-                              c.message.chat.id,
-                              c.message.message_id)
-        if not data.get('checkIn'):
-            data['checkIn'] = result.strftime('%d-%m-%Y')
-            bot.callback_query_handler(next_step_date(c.message), reply_markup=gen_markup())
+@bot.callback_query_handler(func=lambda call: True)
+def inline(call):
+    if call.data in ['yes_photo', 'no_photo']:
+        data['photo'] = (True if call.data == 'yes_photo' else False)
+        if data['photo']:
+            msg2 = bot.send_message(call.message.chat.id,
+                                    'Количество фотографий, которые необходимо вывести в результате? (не более 5)')
+            bot.register_next_step_handler(msg2, next_step_count_photo)
         else:
-            data['checkOut'] = result.strftime('%d-%m-%Y')
-            if data['checkOut'] > data['checkIn']:
-                mmes = bot.send_message(c.message,
-                                        'Укажите количество отелей, которые необходимо вывести (не более 25)')
-                bot.register_next_step_handler(mmes, next_step_count_hotels)
+            txt = lowprice.low_price(data)
+            bot.send_message(chat_id=data['chat_id'], text=txt)
+
+    elif call.data == MyStyleCalendar.func(calendar_id=1):
+        result, key, step = MyStyleCalendar(calendar_id=1).process(call.data)
+        if result:
+            bot.edit_message_text(f"Выбрана дата {result}",
+                                  call.message.chat.id,
+                                  call.message.message_id)
+            if not data.get('checkIn'):
+                data['checkIn'] = result.strftime('%d-%m-%Y')
+                bot.send_message(call.chat.id,
+                                 "Выберите дату выезда",
+                                 reply_markup=MyStyleCalendar(calendar_id=1).build()[0])
             else:
-                bot.send_message(c.message, 'Дата выезда должна быть больше даты въезда.\nПовторите ввод.')
-                bot.callback_query_handler(next_step_date(c.message), reply_markup=gen_markup())
+                data['checkOut'] = result.strftime('%d-%m-%Y')
+                if data['checkOut'] > data['checkIn']:
+                    mmes = bot.send_message(call.message,
+                                            'Укажите количество отелей, которые необходимо вывести (не более 25)')
+                    bot.register_next_step_handler(mmes, next_step_count_hotels)
+                else:
+                    bot.send_message(call.chat.id,
+                                     "Дата выезда должна быть больше даты въезда.\nПовторите ввод.",
+                                     reply_markup=MyStyleCalendar(calendar_id=1).build()[0])
+    elif call.data == "hotel_backward": # гостиница назад
+        pass
 
+    elif call.data == "hotel_forward": # гостиница вперед
+        pass
 
-@bot.callback_query_handler(func=lambda c: c.data in ['yes_photo', 'no_photo'])
-def inline(c):
-    bot.delete_message(c.message.chat.id, message_id=c.message.id)
-    data['photo'] = (True if c.data == 'yes_photo' else False)
-    if data['photo']:
-        msg2 = bot.send_message(c.message.chat.id,
-                                'Количество фотографий, которые необходимо вывести в результате? (не более 5)')
-        bot.register_next_step_handler(msg2, next_step_count_photo)
-    else:
-        txt = lowprice.low_price(data)
-        bot.send_message(chat_id=data['chat_id'], text=txt)
+    elif call.data == "photo_backward": # фото назад
+        pass
+
+    elif call.data == "photo_forward": # фото вперед
+        pass
+
 
