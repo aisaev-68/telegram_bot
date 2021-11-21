@@ -1,5 +1,4 @@
 import json
-from functions import get_photos, req
 from main import data_user
 
 
