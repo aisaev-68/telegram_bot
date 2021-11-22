@@ -3,11 +3,12 @@ import re
 from myclass import MyStyleCalendar
 from keyboards import PhotoYesNo, InlKbPhoto
 from decouple import config
-from telebot import TeleBot
+from telebot import TeleBot, types
+import time
 
 bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
-data_user = {}
+user = {}
 
 loc_dict1 = {'ru_RU': ['Выберите дату въезда:', 'Выберите дату выезда:', 'Будут выведены 25 отелей:',
                        'Показать фотографии отелей?',
@@ -41,14 +42,14 @@ def next_step_city(mess):
                                     'Город должен содержать только буквы, повторите ввод.')
         bot.register_next_step_handler(err_city, next_step_city)
     else:
-        data_user[mess.chat.id].search_city = mess.text
-        data_user[mess.chat.id].language = ("ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]',
+        user[mess.chat.id].search_city = mess.text
+        user[mess.chat.id].language = ("ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]',
                                                                                           '', mess.text)) else "en_US")
-        data_user[mess.chat.id].currency = ('RUB' if data_user[mess.chat.id].language == 'ru_RU' else 'USD')
-        idcity = data_user[mess.chat.id].get_city_id()
+        user[mess.chat.id].currency = ('RUB' if user[mess.chat.id].language == 'ru_RU' else 'USD')
+        idcity = user[mess.chat.id].get_city_id()
 
         if idcity is not None:
-            data_user[mess.chat.id].id_city = idcity
+            user[mess.chat.id].id_city = idcity
             bot.send_message(mess.chat.id,
                              "Выберите дату въезда",
                              reply_markup=MyStyleCalendar(calendar_id=1).build()[0])
@@ -77,10 +78,10 @@ def next_step_count_hotels(mess):
         bot.register_next_step_handler(err_num, next_step_count_hotels)
     else:
         if int(mess.text) > 25:
-            data_user[mess.chat.id].count_show_hotels = 25
+            user[mess.chat.id].count_show_hotels = 25
             bot.send_message(mess.chat.id, 'Будут выведены 25 отелей')
         else:
-            data_user[mess.chat.id].count_show_hotels = int(mess.text)
+            user[mess.chat.id].count_show_hotels = int(mess.text)
         bot.send_message(mess.chat.id, "Показать фотографии отелей?", reply_markup=PhotoYesNo().get_photo_yes_no())
 
 
@@ -96,18 +97,21 @@ def next_step_count_photo(mess):
         bot.register_next_step_handler(err_num, next_step_count_photo)
     else:
         if int(mess.text) >= 5:
-            data_user[mess.chat.id].count_show_photo = 5
+            user[mess.chat.id].count_show_photo = 5
             bot.send_message(mess.chat.id, 'Будут выведены 5 фото.')
 
         else:
-            data_user[mess.chat.id].count_show_photo = int(mess.text)
-        querystring = data_user[mess.chat.id].queryAPI(data_user[mess.chat.id].command)
-        data_user[mess.chat.id].low_price(querystring)
-        hotels_all = data_user[mess.chat.id].all_hotels
-        print(hotels_all)
-        key = list(hotels_all.keys())[0]
-        bot.send_photo(mess.chat.id, get(hotels_all[key][0]).content)
-        bot.send_message(mess.chat.id, key, reply_markup=InlKbPhoto().getkbd())
+            user[mess.chat.id].count_show_photo = int(mess.text)
+        querystring = user[mess.chat.id].queryAPI(user[mess.chat.id].command)
+        user[mess.chat.id].low_price(querystring)
+        get_photo = user[mess.chat.id].p_forward_backward()
+        pesphoto = bot.send_photo(mess.chat.id, get(get_photo).content)
+        user[mess.chat.id].message_id_photo = pesphoto.message_id
+        get_hotel = user[mess.chat.id].h_forward_backward()
+        meshotel = bot.send_message(mess.chat.id, get_hotel, reply_markup=InlKbPhoto().getkbd())
+        user[mess.chat.id].message_id_hotel = meshotel.message_id
+
+
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -115,17 +119,19 @@ def inline(call):
     print(call)
 
     if call.data in ['yes_photo', 'no_photo']:
-        data_user[call.message.chat.id].status_show_photo = (True if call.data == 'yes_photo' else False)
-        if data_user[call.message.chat.id].status_show_photo:
+
+        user[call.message.chat.id].status_show_photo = (True if call.data == 'yes_photo' else False)
+        if user[call.message.chat.id].status_show_photo:
             msg2 = bot.send_message(call.message.chat.id,
                                     'Количество фотографий, которые необходимо вывести в результате (не более 5)? ')
             bot.register_next_step_handler(msg2, next_step_count_photo)
         else:
-            data_user[call.message.chat.id].all_hotels = data_user[call.message.chat.id].queryAPI(
-                data_user[call.message.chat.id].command)
-            bot.send_photo(call.message.chat.id, data_user[call.message.chat.id].all_hotels.values()[0])
-            bot.send_message(call.message.chat.id, data_user[call.message.chat.id].all_hotels.keys()[0],
-                             reply_markup=InlKbPhoto().getkbd())
+            # необходимо реализовать в классе условие при отказе от фото
+            user[call.message.chat.id].all_hotels = user[call.message.chat.id].queryAPI(
+                user[call.message.chat.id].command)
+            get_hotel = user[call.message.chat.id].h_forward_backward()
+            user[call.message.chat.id].message_id_hotel = \
+                bot.send_message(call.message.chat.id, get_hotel, reply_markup=InlKbPhoto().getkbd()).message_id
 
     elif call.data.startswith('cbcal_1'):
         result, key, step = MyStyleCalendar(calendar_id=1).process(call.data)
@@ -133,15 +139,15 @@ def inline(call):
             bot.edit_message_text(f"Выбрана дата {result}",
                                   call.message.chat.id,
                                   call.message.message_id)
-            if not data_user[call.message.chat.id].checkIn:
-                data_user[call.message.chat.id].checkIn = result.strftime('%Y-%m-%d')
+            if not user[call.message.chat.id].checkIn:
+                user[call.message.chat.id].checkIn = result.strftime('%Y-%m-%d')
                 bot.send_message(call.message.chat.id,
                                  "Выберите дату выезда",
                                  reply_markup=MyStyleCalendar(calendar_id=1).build()[0])
             else:
-                data_user[call.message.chat.id].checkOut = result.strftime('%Y-%m-%d')
-                data_user[call.message.chat.id].diff_date()
-                if data_user[call.message.chat.id].checkOut > data_user[call.message.chat.id].checkIn:
+                user[call.message.chat.id].checkOut = result.strftime('%Y-%m-%d')
+                user[call.message.chat.id].diff_date()
+                if user[call.message.chat.id].checkOut > user[call.message.chat.id].checkIn:
                     mmes = bot.send_message(call.message.chat.id,
                                             'Укажите количество отелей, которые необходимо вывести (не более 25)')
                     bot.register_next_step_handler(mmes, next_step_count_hotels)
@@ -150,21 +156,34 @@ def inline(call):
                                      "Дата выезда должна быть больше даты въезда.Повторите ввод.",
                                      reply_markup=MyStyleCalendar(calendar_id=1).build()[0])
 
-    elif call.data is ["hotel_backward", "hotel_forward", "photo_backward", "photo_forward"]:
-        hotels_all = iter(data_user[call.message.chat.id].all_hotels)
-        print(hotels_all)
+    elif call.data in ["hotel_backward", "hotel_forward", "photo_backward", "photo_forward"]:
+        print(1)
         if call.data == "hotel_backward":  # гостиница назад
-            print(1)
+            user[call.message.chat.id].index_hotel = -1
+            get_hotel = user[call.message.chat.id].h_forward_backward()
+            time.sleep(1)
+            bot.edit_message_text(chat_id=call.mess.chat.id, message_id=user[call.mess.chat.id].mes_id_hotel,
+                                  text=get_hotel, reply_markup=InlKbPhoto().getkbd())
 
         elif call.data == "hotel_forward":  # гостиница вперед
-            next_hotel = next(hotels_all)
-            print(next_hotel)
-            next_photo = iter(hotels_all[next_hotel])
-            bot.send_photo(call.message.chat.id, get(next(next_photo)).content)
-            bot.send_message(call.message.chat.id, next_hotel, reply_markup=InlKbPhoto().getkbd())
+            user[call.message.chat.id].index_hotel = 1
+            get_hotel = user[call.message.chat.id].h_forward_backward()
+            time.sleep(1)
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=user[call.message.chat.id].message_id_hotel,
+                                  text=get_hotel, reply_markup=InlKbPhoto().getkbd())
 
         elif call.data == "photo_backward":  # фото назад
-            print(3)
+            user[call.message.chat.id].index_photo = -1
+            photo = user[call.message.chat.id].p_forward_backward()
+            time.sleep(1)
+            bot.edit_message_media(chat_id=call.message.chat.id, message_id=user[call.message.chat.id].message_id_photo,
+                                   media=types.InputMediaPhoto(get(photo).content))
+
 
         elif call.data == "photo_forward":  # фото вперед
-            print(4)
+            user[call.message.chat.id].index_photo = 1
+            photo = user[call.message.chat.id].p_forward_backward()
+            time.sleep(1)
+            bot.edit_message_media(chat_id=call.message.chat.id, message_id=user[call.message.chat.id].message_id_photo,
+                                   media=types.InputMediaPhoto(get(photo).content))
+

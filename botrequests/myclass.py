@@ -38,6 +38,10 @@ class Users:
         self.__currency: str = ''
         self.__diff_date: int = 0
         self.__command: str = ''
+        self.__index_hotel: list = [0]
+        self.__index_photo: list = [0]
+        self.__mes_id_hotel: int = 0
+        self.__mes_id_photo: int = 0
 
     def setUsername(self, nameuser: str) -> None:
         self.__username = nameuser
@@ -145,6 +149,14 @@ class Users:
 
     language = property(getLanguage, setLanguage)
 
+    def setCurrency(self, curr: str) -> None:
+        self.__currency = curr
+
+    def getCurrency(self) -> str:
+        return self.__currency
+
+    currency = property(getCurrency, setCurrency)
+
     def setAll_hotels(self, hotels: dict) -> None:
         self.__all_hotels = hotels
 
@@ -164,6 +176,61 @@ class Users:
         return self.__status_show_foto
 
     status_show_foto = property(getStatus_show_photo, setStatus_show_photo)
+
+    def setIndex_hotel(self, ind: int) -> None:
+        self.__index_hotel[0] += ind
+
+    def getIndex_hotel(self) -> int:
+        return self.__index_hotel[0]
+
+    index_hotel = property(getIndex_hotel, setIndex_hotel)
+
+    def setIndex_photo(self, ind: int) -> None:
+        self.__index_photo[0] += ind
+
+    def getIndex_photo(self) -> int:
+        return self.__index_photo[0]
+
+    index_photo = property(getIndex_photo, setIndex_photo)
+
+    def setMes_id_hotel(self, mid: int) -> None:
+        self.__mes_id_hotel = mid
+
+    def getMes_id_hotel(self) -> int:
+        return self.__mes_id_hotel
+
+    message_id_hotel = property(getMes_id_hotel, setMes_id_hotel)
+
+    def setMes_id_photo(self, pid: int) -> None:
+        self.__mes_id_photo = pid
+
+    def getMes_id_photo(self) -> int:
+        return self.__mes_id_photo
+
+    message_id_photo = property(getMes_id_photo, setMes_id_photo)
+
+    def h_forward_backward(self):
+        hotel = ''
+        hotels_lst = list(self.__all_hotels.keys())
+        print('Гостиницы', hotels_lst)
+        if self.__index_hotel[0] == 0:
+            hotel = hotels_lst[0]
+        elif 0 < self.__index_hotel[0] <= self.__count_show_hotels:
+            hotel = hotels_lst[self.__index_hotel[0]]
+        print('Гостиница', hotel)
+        return hotel
+
+    def p_forward_backward(self):
+        photo = ''
+        hotel = self.h_forward_backward()
+        photos_lst = self.__all_hotels[hotel]
+        print('Фото список', photos_lst)
+        if self.__index_photo[0] == 0:
+            photo = photos_lst[0]
+        elif 0 < self.__index_photo[0] <= self.__count_show_photo:
+            photo = photos_lst[self.__index_photo[0]]
+        print('фото', photo)
+        return photo
 
     def diff_date(self) -> None:
         """
@@ -298,9 +365,9 @@ class Users:
 
     def get_photos(self, id_photo):
         """
-        Функция возвращает ссылки на фотографии отеля. Если не найдены, возвращает пустую строку.
-        :param id_photo: название города, введённое пользователем бота
-        :return photo_list: ссылки на фотографии отеля
+        Функция возвращает список ссылок на фотографии отеля. Если не найдены, возвращает пустой список.
+        :param id_photo: ID отеля
+        :return photo_list: список ссылок на фотографии отеля
         """
 
         url = config('URL_PHOTOS')
@@ -311,7 +378,7 @@ class Users:
         for photo in response["roomImages"]:
             for img in photo['images']:
                 photo_list.append(img['baseUrl'].replace('{size}', 'z'))
-
+        print(photo_list)
         return photo_list
 
 
