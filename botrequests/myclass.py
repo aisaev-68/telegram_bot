@@ -23,6 +23,7 @@ class Users:
         self.__username: str = user.from_user.username
         self.__id_user: int = user.from_user.id
         self.__search_city: str = user.text
+        self.__search_hotels: int = 0
         self.__id_city: str = ''
         self.__checkIn: str = ''
         self.__checkOut: str = ''
@@ -66,6 +67,14 @@ class Users:
         return self.__search_city
 
     search_city = property(getSearch_city, setSearch_city)
+
+    def setSearch_hotels(self, numb: int) -> None:
+        self.__search_hotels = numb
+
+    def getSearch_hotels(self) -> int:
+        return self.__search_hotels
+
+    search_hotels = property(getSearch_hotels, setSearch_hotels)
 
     def setId_city(self, id_city: str) -> None:
         self.__id_city = id_city
@@ -181,11 +190,17 @@ class Users:
         self.__index_hotel[0] += ind
 
     def getIndex_hotel(self) -> int:
+        if self.__index_hotel[0] >= self.__search_hotels:
+            self.__index_hotel[0] = self.__search_hotels - 1
+        elif self.__index_hotel[0] < 0:
+            self.__index_hotel[0] = 0
+
         return self.__index_hotel[0]
 
     index_hotel = property(getIndex_hotel, setIndex_hotel)
 
     def setIndex_photo(self, ind: int) -> None:
+
         self.__index_photo[0] += ind
 
     def getIndex_photo(self) -> int:
@@ -210,27 +225,24 @@ class Users:
     message_id_photo = property(getMes_id_photo, setMes_id_photo)
 
     def h_forward_backward(self):
-        hotel = ''
+        """
+        Функция возвращает отель по индексу
+
+        """
         hotels_lst = list(self.__all_hotels.keys())
-        print('Гостиницы', hotels_lst)
-        if self.__index_hotel[0] == 0:
-            hotel = hotels_lst[0]
-        elif 0 < self.__index_hotel[0] <= self.__count_show_hotels:
-            hotel = hotels_lst[self.__index_hotel[0]]
-        print('Гостиница', hotel)
-        return hotel
+        self.getIndex_hotel()
+        print(self.__index_hotel[0])
+        return hotels_lst[self.__index_hotel[0]]
 
     def p_forward_backward(self):
-        photo = ''
+        """
+        Функция возвращает список фото отеля по индексу
+
+        """
         hotel = self.h_forward_backward()
         photos_lst = self.__all_hotels[hotel]
-        print('Фото список', photos_lst)
-        if self.__index_photo[0] == 0:
-            photo = photos_lst[0]
-        elif 0 < self.__index_photo[0] <= self.__count_show_photo:
-            photo = photos_lst[self.__index_photo[0]]
-        print('фото', photo)
-        return photo
+        if 0 <= self.__index_photo[0] <= self.__count_show_photo:
+            return photos_lst[self.__index_photo[0]]
 
     def diff_date(self) -> None:
         """
@@ -247,7 +259,6 @@ class Users:
 
         """
         return self.__diff_date
-
 
     def queryAPI(self, command) -> dict:
         """Функция формирует строку запроса в виде словаря
@@ -319,18 +330,23 @@ class Users:
         hotels_dict = {}
         low_data = self.req_api(url_low, querystring)
         loc = self.language
+        # TypeError: 'NoneType' object is not subscriptable
+        count = 0
+        print(low_data)
         for hotel_count, results in enumerate(low_data['data']['body']['searchResults']['results']):
             summa = float(self.getDiff_date()) * results["ratePlan"]["price"]["exactCurrent"]
+            count += 1
             if self.count_show_hotels != hotel_count:
-                txt = f'{self.loc_txt[loc][0]} {(results.get("starRating")) if results.get("starRating") else "--"}\n' \
-                      f'{self.loc_txt[loc][1]} {results["name"]}\n{self.loc_txt[loc][2]} {results["address"].get("countryName")}, ' \
-                      f'{results["address"].get("locality")}\n' \
-                      f'{(results["address"].get("streetAddress") if results["address"].get("streetAddress") else "Нет данных об адресе...")}\n' \
-                      f'{self.loc_txt[loc][3]} {results["landmarks"][0]["distance"]}\n' \
-                      f'{self.loc_txt[loc][4]} {self.checkIn}\n' \
-                      f'{self.loc_txt[loc][5]} {self.checkOut}\n' \
-                      f'{self.loc_txt[loc][6]} {(results["ratePlan"]["price"]["exactCurrent"]) if results["ratePlan"]["price"]["exactCurrent"] else "Нет данных о расценках..."}\n' \
-                      f'{self.loc_txt[loc][7].format(self.getDiff_date())} {summa if results["ratePlan"]["price"]["exactCurrent"] else "Нет данных о расценках..."}'
+                txt = f'⭐⭐⭐{self.loc_txt[loc][0]} {(results.get("starRating")) if results.get("starRating") else "--"}⭐⭐⭐\n' \
+                      f'🏨 {self.loc_txt[loc][1]} {results["name"]}\n' \
+                      f'      {self.loc_txt[loc][2]} {results["address"].get("countryName")}, {results["address"].get("locality")}\n' \
+                      f'      {(results["address"].get("streetAddress") if results["address"].get("streetAddress") else "Нет данных об адресе...")}\n' \
+                      f'🚗 {self.loc_txt[loc][3]} {results["landmarks"][0]["distance"]}\n' \
+                      f'📅 {self.loc_txt[loc][4]} {self.checkIn}\n' \
+                      f'📅 {self.loc_txt[loc][5]} {self.checkOut}\n' \
+                      f'💵 {self.loc_txt[loc][6]} {(results["ratePlan"]["price"]["exactCurrent"]) if results["ratePlan"]["price"]["exactCurrent"] else "Нет данных о расценках..."}\n' \
+                      f'💵 {self.loc_txt[loc][7].format(self.getDiff_date())} {summa if results["ratePlan"]["price"]["exactCurrent"] else "Нет данных о расценках..."}\n' \
+                      f'🌍 Ссылка https://ru.hotels.com/ho{results["id"]}'
                 data_photo = self.get_photos(results['id'])
                 photo_lst = []
                 for index, photo in enumerate(data_photo):
@@ -340,15 +356,16 @@ class Users:
                         break
                 hotels_dict[txt] = photo_lst
 
-        self.all_hotels = hotels_dict
+        self.__search_hotels = count
+        self.__all_hotels = hotels_dict
 
         with open('hotel.json', 'w') as f:
-            json.dump(self.all_hotels, f, ensure_ascii=False, indent=4)
+            json.dump(self.all_hotels, f, indent=4)
 
     def get_city_id(self) -> str:
         """
         Функция возвращает ID города. Если город не найден, возвращает пустую строку.
-        :param querystring: строка запроса в виде словаря
+        querystring: строка запроса в виде словаря
         {"query": 'Москва', "locale": 'ru_RU'}
         """
         querystring = {"query": self.__search_city, "locale": self.__language}
@@ -356,6 +373,7 @@ class Users:
 
         result_locations_search = self.req_api(url, querystring)
         destination_id = None
+        # TypeError: 'NoneType' object is not subscriptable
         for group in result_locations_search['suggestions']:
             if group['group'] == 'CITY_GROUP':
                 if group['entities']:
@@ -380,6 +398,17 @@ class Users:
                 photo_list.append(img['baseUrl'].replace('{size}', 'z'))
         print(photo_list)
         return photo_list
+
+    def __str__(self):
+
+        txt = f"username: {self.__username}\nid_user: {self.__id_user:}\n" \
+              f"search_city: {self.__search_city}\nid_city: {self.__id_city}\n" \
+              f"checkIn: {self.__checkIn}\ncheckOut: {self.__checkOut:}\n" \
+              f"count_show_hotels: {self.__count_show_hotels}\n" \
+              f"count_show_photo: {self.__count_show_photo}\nlanguage: {self.__language}\n" \
+              f"currency: {self.__currency}\ndiff_date: {self.__diff_date}\ncommand: {self.__command}" \
+              f"search_hotels: {self.__search_hotels}"
+        return txt
 
 
 class MyStyleCalendar(WMonthTelegramCalendar):

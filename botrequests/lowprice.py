@@ -1,7 +1,7 @@
 import json
 from main import data_user
 
-
+#https://ru.hotels.com/ho773738752/?q-check-in=2021-11-26&q-check-out=2021-11-27&q-rooms=1&q-room-0-adults=1&q-room-0-children=0&f-name=%D0%A5%D0%BE%D1%81%D1%82%D0%B5%D0%BB%20%C2%AB%D0%A4%D0%BE%D1%80%D1%82%D1%83%D0%BD%D0%B0%20%D0%98%D0%BD%D0%BD%C2%BB&sort-order=BEST_SELLER&WOD=5&WOE=6&MGT=1&ZSX=0&SYE=3&YGF=2
 loc_dict = {'ru_RU': ['Рейтинг:', 'Название отеля:', 'Адрес:', 'Удаленность от центра города:', 'Дата въезда:',
                       'Дата выезда', 'Стоимость за сутки (в руб):', 'Стоимость за {} сутки (в руб):'],
             'en_US': ['Rating:', 'The name of the hotel:', 'Address:', 'Distance from the city center:', 'Arrival date:',
