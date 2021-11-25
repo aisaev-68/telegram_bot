@@ -3,6 +3,7 @@ import datetime
 import requests
 from decouple import config
 import json
+from keyboards import PhotoYesNo, InlKbShow, HotelKbd, PhotoNumbKbd
 
 
 class Users:
@@ -43,6 +44,11 @@ class Users:
         self.__index_photo: list = [0]
         self.__mes_id_hotel: int = 0
         self.__mes_id_photo: int = 0
+        self._get_hotel_kbd = HotelKbd().get_hotel_kbd()
+        self.__get_photo_yes_no = PhotoYesNo().get_photo_yes_no()
+        self.__get_kbd_photo_numb = PhotoNumbKbd().get_kbd_photo_numb()
+        self.__get_show_kbd = InlKbShow().get_show_kbd()
+
 
     def setUsername(self, nameuser: str) -> None:
         self.__username = nameuser
@@ -223,6 +229,18 @@ class Users:
         return self.__mes_id_photo
 
     message_id_photo = property(getMes_id_photo, setMes_id_photo)
+
+    def getHotel_kbd(self):
+        return self._get_hotel_kbd
+
+    def getPhoto_yes_no(self):
+        return self.__get_photo_yes_no
+
+    def getKbd_photo_numb(self):
+        return self.__get_kbd_photo_numb
+
+    def getShow_kbd(self):
+        return self.__get_show_kbd
 
     def h_forward_backward(self):
         """
@@ -406,7 +424,7 @@ class Users:
               f"checkIn: {self.__checkIn}\ncheckOut: {self.__checkOut:}\n" \
               f"count_show_hotels: {self.__count_show_hotels}\n" \
               f"count_show_photo: {self.__count_show_photo}\nlanguage: {self.__language}\n" \
-              f"currency: {self.__currency}\ndiff_date: {self.__diff_date}\ncommand: {self.__command}" \
+              f"currency: {self.__currency}\ndiff_date: {self.__diff_date}\ncommand: {self.__command}\n" \
               f"search_hotels: {self.__search_hotels}"
         return txt
 

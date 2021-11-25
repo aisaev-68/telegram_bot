@@ -4,12 +4,12 @@ class HotelKbd:
     """ Класс для выводы количества гостиниц
     """
     def __init__(self) -> None:
-        self.__markup = types.InlineKeyboardMarkup()
-        self.__five_hotels = types.InlineKeyboardButton(text='5️⃣', callback_data='five')
-        self.__ten_hotels = types.InlineKeyboardButton(text='1️⃣0️⃣', callback_data='ten')
-        self.__fifteen_hotels = types.InlineKeyboardButton(text='1️⃣5️⃣', callback_data='fifteen')
-        self.__twenty_hotels = types.InlineKeyboardButton(text='2️⃣0️⃣', callback_data='twenty')
-        self.__twenty_five_hotels = types.InlineKeyboardButton(text='2️⃣5️⃣', callback_data='twenty_five')
+        self.__markup = types.InlineKeyboardMarkup(row_width=5)
+        self.__five_hotels = types.InlineKeyboardButton(text='5', callback_data='five')
+        self.__ten_hotels = types.InlineKeyboardButton(text='10', callback_data='ten')
+        self.__fifteen_hotels = types.InlineKeyboardButton(text='15', callback_data='fifteen')
+        self.__twenty_hotels = types.InlineKeyboardButton(text='20', callback_data='twenty')
+        self.__twenty_five_hotels = types.InlineKeyboardButton(text='25', callback_data='twenty_five')
         self.__markup.add(self.__five_hotels, self.__ten_hotels, self.__fifteen_hotels,
                           self.__twenty_hotels, self.__twenty_five_hotels)
 
@@ -34,12 +34,12 @@ class PhotoNumbKbd:
     """ Класс для выбора количества выводимых фото
     """
     def __init__(self) -> None:
-        self.__markup = types.InlineKeyboardMarkup()
-        self.__one_photo = types.InlineKeyboardButton(text='1️⃣', callback_data='one_photo')
-        self.__two_photo = types.InlineKeyboardButton(text='2️⃣', callback_data='two_photo')
-        self.__three_photo = types.InlineKeyboardButton(text='3️⃣', callback_data='three_photo')
-        self.__four_photo = types.InlineKeyboardButton(text='4️⃣', callback_data='four_photo')
-        self.__five_photo = types.InlineKeyboardButton(text='5️⃣', callback_data='five_photo')
+        self.__markup = types.InlineKeyboardMarkup(row_width=5)
+        self.__one_photo = types.InlineKeyboardButton(text='1', callback_data='one_photo')
+        self.__two_photo = types.InlineKeyboardButton(text='2', callback_data='two_photo')
+        self.__three_photo = types.InlineKeyboardButton(text='3', callback_data='three_photo')
+        self.__four_photo = types.InlineKeyboardButton(text='4', callback_data='four_photo')
+        self.__five_photo = types.InlineKeyboardButton(text='5', callback_data='five_photo')
         self.__markup.add(self.__one_photo, self.__two_photo, self.__three_photo,
                           self.__four_photo, self.__five_photo)
 
