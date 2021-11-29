@@ -4,6 +4,7 @@ import requests
 from decouple import config
 import json
 from keyboards import PhotoYesNo, InlKbShow, HotelKbd, PhotoNumbKbd
+from more_itertools import seekable
 
 
 class Users:
@@ -13,15 +14,17 @@ class Users:
     """
     commands = ["/lowprice", "/highprice", "/bestdeal", "/history"]
 
-    loc_txt = {'ru_RU': ['Рейтинг:', 'Название отеля:', 'Адрес:', 'Удаленность от центра города:', 'Дата въезда:',
-                         'Дата выезда', 'Стоимость за сутки (в руб):', 'Стоимость за {} сутки (в руб):'],
+    loc_txt = {'ru_RU': ['Рейтинг: ', 'Отель: ', 'Адрес: ', 'От центра города:', 'Дата заезда-выезда: ',
+                         'Цена за сутки (в руб): ', 'Цена за {} сутки (в руб): ', 'Ссылка на страницу: '],
                'en_US': [
-                   'Rating:', 'The name of the hotel:', 'Address:', 'Distance from the city center:', 'Arrival date:',
-                   'Date of departure:', 'Cost per day (USD):', 'Price for {} day (USD):'
+                   'Rating: ', 'Hotel: ', 'Address: ', 'From the city center: ', 'Check-in (check-out) date: ',
+                   'Price per day (USD): ', 'Price for {} day (USD): ', 'link to the page: '
                ]}
 
     def __init__(self, user) -> None:
+        self.__first_name = user.from_user.first_name
         self.__username: str = user.from_user.username
+        self.__last_name: str = user.from_user.last_name
         self.__id_user: int = user.from_user.id
         self.__search_city: str = user.text
         self.__search_hotels: int = 0
@@ -40,14 +43,19 @@ class Users:
         self.__currency: str = ''
         self.__diff_date: int = 0
         self.__command: str = ''
-        self.__index_hotel: list = [0]
-        self.__index_photo: list = [0]
         self.__mes_id_hotel: int = 0
         self.__mes_id_photo: int = 0
         self._get_hotel_kbd = HotelKbd().get_hotel_kbd()
         self.__get_photo_yes_no = PhotoYesNo().get_photo_yes_no()
         self.__get_kbd_photo_numb = PhotoNumbKbd().get_kbd_photo_numb()
         self.__get_show_kbd = InlKbShow().get_show_kbd()
+        self.__start_index_hotel: int = 0
+        self.__start_index_photo: int = 0
+        self.__hotel_forward_triger : bool = True
+        self.__hotel_backward_triger: bool = True
+        self.__photo_backward_triger: bool = False
+        self.__photo_forward_triger: bool = True
+        self.__photo_list: list = []
 
 
     def setUsername(self, nameuser: str) -> None:
@@ -73,14 +81,6 @@ class Users:
         return self.__search_city
 
     search_city = property(getSearch_city, setSearch_city)
-
-    def setSearch_hotels(self, numb: int) -> None:
-        self.__search_hotels = numb
-
-    def getSearch_hotels(self) -> int:
-        return self.__search_hotels
-
-    search_hotels = property(getSearch_hotels, setSearch_hotels)
 
     def setId_city(self, id_city: str) -> None:
         self.__id_city = id_city
@@ -192,27 +192,6 @@ class Users:
 
     status_show_foto = property(getStatus_show_photo, setStatus_show_photo)
 
-    def setIndex_hotel(self, ind: int) -> None:
-        self.__index_hotel[0] += ind
-
-    def getIndex_hotel(self) -> int:
-        if self.__index_hotel[0] >= self.__search_hotels:
-            self.__index_hotel[0] = self.__search_hotels - 1
-        elif self.__index_hotel[0] < 0:
-            self.__index_hotel[0] = 0
-
-        return self.__index_hotel[0]
-
-    index_hotel = property(getIndex_hotel, setIndex_hotel)
-
-    def setIndex_photo(self, ind: int) -> None:
-
-        self.__index_photo[0] += ind
-
-    def getIndex_photo(self) -> int:
-        return self.__index_photo[0]
-
-    index_photo = property(getIndex_photo, setIndex_photo)
 
     def setMes_id_hotel(self, mid: int) -> None:
         self.__mes_id_hotel = mid
@@ -242,25 +221,107 @@ class Users:
     def getShow_kbd(self):
         return self.__get_show_kbd
 
-    def h_forward_backward(self):
+    def getStartIndexHotel(self):
+        return self.__start_index_hotel
+
+    def setStartIndexPhoto(self):
+        self.__start_index_photo = 0
+
+    def getCountHotel(self) -> int:
+        return len(self.__all_hotels)
+
+    def getCountPhotos(self) -> int:
+        hotels_lst = list(self.__all_hotels)
+        return len(hotels_lst[self.__start_index_hotel])
+
+    def getHotel_forward_triger(self):
+        return self.__hotel_forward_triger
+
+    def getHotel_backward_triger(self):
+        return self.__hotel_backward_triger
+
+    def getPhoto_forward_triger(self):
+        return self.__photo_forward_triger
+
+    def setPhoto_forward_triger(self, trig):
+        self.__photo_forward_triger = trig
+
+    photo_forward_triger = property(getPhoto_forward_triger, setPhoto_forward_triger)
+
+    def getPhoto_backward_triger(self):
+        return self.__photo_backward_triger
+
+    def setPhoto_backward_triger(self, trig):
+        self.__photo_backward_triger = trig
+
+    photo_backward_triger = property(getPhoto_backward_triger, setPhoto_backward_triger)
+
+    def setPhotoList(self, lst: list):
+        self.__photo_list = lst
+
+    def getPhotoList(self):
+        return self.__photo_list
+
+    photo_list = property(getPhotoList, setPhotoList)
+
+    def hotel_forward(self):
         """
         Функция возвращает отель по индексу
 
         """
-        hotels_lst = list(self.__all_hotels.keys())
-        self.getIndex_hotel()
-        print(self.__index_hotel[0])
-        return hotels_lst[self.__index_hotel[0]]
+        index = self.__start_index_hotel
+        hotel = list(self.__all_hotels)[index]
+        self.__photo_list = self.__all_hotels[hotel]
+        if self.__start_index_hotel < len(list(self.__all_hotels)):
+            self.__start_index_hotel += 1
+        if self.__start_index_hotel == len(list(self.__all_hotels)) - 1:
+            self.__hotel_forward_triger = False
+            self.__hotel_backward_triger = True
+        print('Вперед', index)
+        return hotel
 
-    def p_forward_backward(self):
+    def hotel_backward(self):
         """
-        Функция возвращает список фото отеля по индексу
+        Функция возвращает отель по индексу
 
         """
-        hotel = self.h_forward_backward()
-        photos_lst = self.__all_hotels[hotel]
-        if 0 <= self.__index_photo[0] <= self.__count_show_photo:
-            return photos_lst[self.__index_photo[0]]
+        index = self.__start_index_hotel
+        hotel = list(self.__all_hotels)[index]
+        self.__photo_list = self.__all_hotels[hotel]
+        if self.__start_index_hotel > 0:
+            self.__start_index_hotel -= 1
+        if self.__start_index_hotel == 0:
+            self.__hotel_backward_triger = False
+            self.__hotel_forward_triger = True
+        print('Назад', index)
+
+        return hotel
+
+    def photo_forward(self):
+        """
+        Функция возвращает следующее фото отеля по индексу
+
+        """
+        if self.__start_index_photo < len(self.__photo_list):
+            self.__start_index_photo += 1
+        if self.__start_index_photo == len(self.__photo_list) - 1:
+            self.__photo_forward_triger = False
+            self.__photo_backward_triger = True
+
+        return self.__photo_list[self.__start_index_photo]
+
+    def photo_backward(self):
+        """
+        Функция возвращает предыдущее фото отеля по индексу
+
+        """
+        if self.__start_index_photo > 0:
+            self.__start_index_photo -= 1
+        if self.__start_index_photo == 0:
+            self.__photo_forward_triger = True
+            self.__photo_backward_triger = False
+
+        return self.__photo_list[self.__start_index_photo]
 
     def diff_date(self) -> None:
         """
@@ -335,7 +396,7 @@ class Users:
         else:
             return None
 
-    def low_price(self, querystring: dict):
+    def low_price(self, querystring: dict, logic: bool) -> None:
         """
             Формирует словарь отелей на основе запроса пользователя и сортировкой по цене.
             Если отелей не найдено возвращает пустой словарь.
@@ -348,31 +409,31 @@ class Users:
         hotels_dict = {}
         low_data = self.req_api(url_low, querystring)
         loc = self.language
+        links_htmls = ("https://ru.hotels.com/ho{}" if loc[:2] == "ru" else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
         # TypeError: 'NoneType' object is not subscriptable
         count = 0
-        print(low_data)
         for hotel_count, results in enumerate(low_data['data']['body']['searchResults']['results']):
             summa = float(self.getDiff_date()) * results["ratePlan"]["price"]["exactCurrent"]
             count += 1
             if self.count_show_hotels != hotel_count:
-                txt = f'⭐⭐⭐{self.loc_txt[loc][0]} {(results.get("starRating")) if results.get("starRating") else "--"}⭐⭐⭐\n' \
-                      f'🏨 {self.loc_txt[loc][1]} {results["name"]}\n' \
-                      f'      {self.loc_txt[loc][2]} {results["address"].get("countryName")}, {results["address"].get("locality")}\n' \
-                      f'      {(results["address"].get("streetAddress") if results["address"].get("streetAddress") else "Нет данных об адресе...")}\n' \
-                      f'🚗 {self.loc_txt[loc][3]} {results["landmarks"][0]["distance"]}\n' \
-                      f'📅 {self.loc_txt[loc][4]} {self.checkIn}\n' \
-                      f'📅 {self.loc_txt[loc][5]} {self.checkOut}\n' \
-                      f'💵 {self.loc_txt[loc][6]} {(results["ratePlan"]["price"]["exactCurrent"]) if results["ratePlan"]["price"]["exactCurrent"] else "Нет данных о расценках..."}\n' \
-                      f'💵 {self.loc_txt[loc][7].format(self.getDiff_date())} {summa if results["ratePlan"]["price"]["exactCurrent"] else "Нет данных о расценках..."}\n' \
-                      f'🌍 Ссылка https://ru.hotels.com/ho{results["id"]}'
-                data_photo = self.get_photos(results['id'])
-                photo_lst = []
-                for index, photo in enumerate(data_photo):
-                    if self.count_show_photo != index:
-                        photo_lst.append(photo)
-                    else:
-                        break
-                hotels_dict[txt] = photo_lst
+                txt = f"⭐⭐⭐{self.loc_txt[loc][0]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐⭐⭐\n" \
+                      f"🏨 {self.loc_txt[loc][1]} {results['name']}\n" \
+                      f"       {self.loc_txt[loc][2]} {results['address'].get('countryName')}, {results['address'].get('locality')}, " \
+                      f"{(results['address'].get('streetAddress') if results['address'].get('streetAddress') else 'Нет данных об адресе...')}\n" \
+                      f"🚗 {self.loc_txt[loc][3]} {results['landmarks'][0]['distance']}\n" \
+                      f"📅 {self.loc_txt[loc][4]} {self.checkIn} - {self.checkOut}\n" \
+                      f"💵 {self.loc_txt[loc][5]} {(results['ratePlan']['price']['exactCurrent']) if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}\n" \
+                      f"💵 {self.loc_txt[loc][6].format(self.getDiff_date())} {summa if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}\n" \
+                      f"🌍 {self.loc_txt[loc][7]}" + f"{links_htmls.format(results['id'])}"
+                if logic:
+                    data_photo = self.get_photos(results['id'])
+                    photo_lst = []
+                    for index, photo in enumerate(data_photo):
+                        if self.count_show_photo != index:
+                            photo_lst.append(photo)
+                        else:
+                            break
+                    hotels_dict[txt] = photo_lst
 
         self.__search_hotels = count
         self.__all_hotels = hotels_dict
@@ -409,12 +470,10 @@ class Users:
         url = config('URL_PHOTOS')
         querystring = {"id": f"{id_photo}"}
         response = self.req_api(url, querystring)
-        print(response["roomImages"])
         photo_list = []
         for photo in response["roomImages"]:
             for img in photo['images']:
                 photo_list.append(img['baseUrl'].replace('{size}', 'z'))
-        print(photo_list)
         return photo_list
 
     def __str__(self):

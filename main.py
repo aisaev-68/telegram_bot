@@ -6,6 +6,7 @@ from telebot import types
 
 @bot.message_handler(content_types=["text"])
 def comands_message(message):
+    print(message)
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
     if message.text.lower() in ["привет", "/hello-world", "help", "start"]:
@@ -19,6 +20,7 @@ def comands_message(message):
     elif message.text.lower() in ['/lowprice']:
         user[message.chat.id].command = message.text
         msg = bot.send_message(message.from_user.id, 'В каком городе будем искать?')
+
         bot.register_next_step_handler(msg, next_step_city)
 
 
