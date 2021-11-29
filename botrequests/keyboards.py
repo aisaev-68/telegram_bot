@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from telebot import types
 
 class HotelKbd:
@@ -66,3 +68,30 @@ class InlKbShow:
     def get_show_kbd(self) -> types.InlineKeyboardMarkup:
         return self.__markup
 
+class InlKbShowNoPhoto:
+    """ Класс кнопок с навигацией по гостиницам и соответствущим ему фотографиям
+       """
+    def __init__(self):
+        self.__markup = types.InlineKeyboardMarkup()
+        self.__markup.row_width = 3
+        self.__hotel_backward = types.InlineKeyboardButton(text="⬅️", callback_data='hotel_backward')
+        self.__hotel = types.InlineKeyboardButton(text="Гостиница", callback_data='hotel')
+        self.__hotel_forward = types.InlineKeyboardButton(text="➡️", callback_data='hotel_forward')
+        self.__markup.add(self.__hotel_backward, self.__hotel, self.__hotel_forward)
+
+    def get_show_kbd(self) -> types.InlineKeyboardMarkup:
+        return self.__markup
+
+class StartKbd:
+
+    def __init__(self):
+        self.__markup_start = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        self.__help_command = types.KeyboardButton('/help')
+        self.__start_command = types.KeyboardButton('/start')
+        self.__low_command = types.KeyboardButton('/lowprice')
+        self.__history_command = types.KeyboardButton('/history')
+        self.__markup_start.row(self.__help_command, self.__start_command,
+                                self.__low_command, self.__history_command)
+
+    def get_start_kbd(self) -> types.ReplyKeyboardMarkup:
+        return self.__markup_start

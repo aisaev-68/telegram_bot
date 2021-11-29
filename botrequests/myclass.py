@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
+
 from telegram_bot_calendar import WMonthTelegramCalendar, DAY
 import datetime
 import requests
 from decouple import config
 import json
-from keyboards import PhotoYesNo, InlKbShow, HotelKbd, PhotoNumbKbd
+import itertools
+from keyboards import PhotoYesNo, InlKbShow, HotelKbd, PhotoNumbKbd, InlKbShowNoPhoto, StartKbd, types
 from more_itertools import seekable
 
 
@@ -35,24 +38,26 @@ class Users:
         self.__count_show_hotels: int = 0
         self.__all_hotels: dict = dict()
         self.__count_show_photo: int = 0
-        self.__status_show_foto: bool = False
+        self.__status_show_photo: bool = False
         self.__price_min_max: dict = dict()
         self.__distance_min_max: dict = dict()
-        self.__history: dict = dict()
+        self.__history: list = []
         self.__language: str = ''
         self.__currency: str = ''
         self.__diff_date: int = 0
         self.__command: str = ''
         self.__mes_id_hotel: int = 0
         self.__mes_id_photo: int = 0
-        self._get_hotel_kbd = HotelKbd().get_hotel_kbd()
-        self.__get_photo_yes_no = PhotoYesNo().get_photo_yes_no()
-        self.__get_kbd_photo_numb = PhotoNumbKbd().get_kbd_photo_numb()
-        self.__get_show_kbd = InlKbShow().get_show_kbd()
-        self.__start_index_hotel: int = 0
-        self.__start_index_photo: int = 0
+        self._get_hotel_kbd: types.InlineKeyboardMarkup = HotelKbd().get_hotel_kbd()
+        self.__get_photo_yes_no: types.InlineKeyboardMarkup = PhotoYesNo().get_photo_yes_no()
+        self.__get_kbd_photo_numb: types.InlineKeyboardMarkup = PhotoNumbKbd().get_kbd_photo_numb()
+        self.__get_show_kbd: types.InlineKeyboardMarkup = InlKbShow().get_show_kbd()
+        self.__get_show_no_photo_kbd: types.InlineKeyboardMarkup = InlKbShowNoPhoto().get_show_kbd()
+        self.__start_keyboard = StartKbd().get_start_kbd()
+        self.__start_index_hotel: int = -1
+        self.__start_index_photo: int = -1
         self.__hotel_forward_triger : bool = True
-        self.__hotel_backward_triger: bool = True
+        self.__hotel_backward_triger: bool = False
         self.__photo_backward_triger: bool = False
         self.__photo_forward_triger: bool = True
         self.__photo_list: list = []
@@ -140,13 +145,6 @@ class Users:
 
     price_min_max = property(getPrice_min_max, setPrice_min_max)
 
-    def setHistory(self, hist):
-        self.__history["history"] = hist
-
-    def getHistory(self) -> dict:
-        return self.__history
-
-    history = property(getHistory, setHistory)
 
     def setCommand(self, cmnd: str) -> None:
         self.__command = cmnd
@@ -181,16 +179,16 @@ class Users:
     all_hotels = property(getAll_hotels, setAll_hotels)
 
     def setStatus_show_photo(self, stat: bool) -> None:
-        self.__status_show_foto = stat
+        self.__status_show_photo = stat
 
     def getStatus_show_photo(self) -> bool:
         """
         Функция определения состояния вывода фото
         :return: возвращает булево (True, False) значение состояния вывода фото
         """
-        return self.__status_show_foto
+        return self.__status_show_photo
 
-    status_show_foto = property(getStatus_show_photo, setStatus_show_photo)
+    status_show_photo = property(getStatus_show_photo, setStatus_show_photo)
 
 
     def setMes_id_hotel(self, mid: int) -> None:
@@ -209,23 +207,30 @@ class Users:
 
     message_id_photo = property(getMes_id_photo, setMes_id_photo)
 
-    def getHotel_kbd(self):
+    def getHotel_kbd(self) -> types.InlineKeyboardMarkup:
         return self._get_hotel_kbd
 
-    def getPhoto_yes_no(self):
+    def getPhoto_yes_no(self) -> types.InlineKeyboardMarkup:
         return self.__get_photo_yes_no
 
-    def getKbd_photo_numb(self):
+    def getKbd_photo_numb(self) -> types.InlineKeyboardMarkup:
         return self.__get_kbd_photo_numb
 
-    def getShow_kbd(self):
+    def getShow_kbd(self) -> types.InlineKeyboardMarkup:
         return self.__get_show_kbd
+
+    def getShowNoPhoto_kbd(self) -> types.InlineKeyboardMarkup:
+        return self.__get_show_no_photo_kbd
+
+    def getStart_kbd(self):
+        return self.__start_keyboard
+
 
     def getStartIndexHotel(self):
         return self.__start_index_hotel
 
     def setStartIndexPhoto(self):
-        self.__start_index_photo = 0
+        self.__start_index_photo = -1
 
     def getCountHotel(self) -> int:
         return len(self.__all_hotels)
@@ -269,31 +274,46 @@ class Users:
         Функция возвращает отель по индексу
 
         """
-        index = self.__start_index_hotel
-        hotel = list(self.__all_hotels)[index]
-        self.__photo_list = self.__all_hotels[hotel]
+        self.__start_index_photo = -1
+        self.__photo_backward_triger = False
+        self.__photo_forward_triger = True
         if self.__start_index_hotel < len(list(self.__all_hotels)):
             self.__start_index_hotel += 1
+            if self.__start_index_hotel > 0:
+                self.__hotel_backward_triger = True
+        else:
+            self.__start_index_hotel = len(list(self.__all_hotels)) - 1
+            self.__hotel_forward_triger = False
         if self.__start_index_hotel == len(list(self.__all_hotels)) - 1:
             self.__hotel_forward_triger = False
-            self.__hotel_backward_triger = True
-        print('Вперед', index)
+        hotel = list(self.__all_hotels)[self.__start_index_hotel]
+        self.__photo_list = self.__all_hotels[hotel]
+        print('Вперед', self.__start_index_hotel)
+
         return hotel
+
 
     def hotel_backward(self):
         """
         Функция возвращает отель по индексу
 
         """
-        index = self.__start_index_hotel
-        hotel = list(self.__all_hotels)[index]
-        self.__photo_list = self.__all_hotels[hotel]
+        self.__start_index_photo = -1
+        self.__photo_backward_triger = False
+        self.__photo_forward_triger = True
         if self.__start_index_hotel > 0:
             self.__start_index_hotel -= 1
+            self.__hotel_forward_triger = True
+        else:
+            self.__start_index_hotel = 0
+            self.__hotel_backward_triger = False
         if self.__start_index_hotel == 0:
             self.__hotel_backward_triger = False
-            self.__hotel_forward_triger = True
-        print('Назад', index)
+
+        hotel = list(self.__all_hotels)[self.__start_index_hotel]
+        self.__photo_list = self.__all_hotels[hotel]
+
+        print('Назад', self.__start_index_hotel)
 
         return hotel
 
@@ -304,9 +324,13 @@ class Users:
         """
         if self.__start_index_photo < len(self.__photo_list):
             self.__start_index_photo += 1
+            if self.__start_index_photo > 0:
+                self.__photo_backward_triger = True
+        else:
+            self.__start_index_photo = len(self.__photo_list) - 1
+            self.__photo_forward_triger = False
         if self.__start_index_photo == len(self.__photo_list) - 1:
             self.__photo_forward_triger = False
-            self.__photo_backward_triger = True
 
         return self.__photo_list[self.__start_index_photo]
 
@@ -317,8 +341,11 @@ class Users:
         """
         if self.__start_index_photo > 0:
             self.__start_index_photo -= 1
-        if self.__start_index_photo == 0:
             self.__photo_forward_triger = True
+        else:
+            self.__start_index_photo = 0
+            self.__photo_backward_triger = False
+        if self.__start_index_photo == 0:
             self.__photo_backward_triger = False
 
         return self.__photo_list[self.__start_index_photo]
@@ -396,7 +423,7 @@ class Users:
         else:
             return None
 
-    def low_price(self, querystring: dict, logic: bool) -> None:
+    def low_price(self, querystring: dict) -> None:
         """
             Формирует словарь отелей на основе запроса пользователя и сортировкой по цене.
             Если отелей не найдено возвращает пустой словарь.
@@ -425,7 +452,7 @@ class Users:
                       f"💵 {self.loc_txt[loc][5]} {(results['ratePlan']['price']['exactCurrent']) if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}\n" \
                       f"💵 {self.loc_txt[loc][6].format(self.getDiff_date())} {summa if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}\n" \
                       f"🌍 {self.loc_txt[loc][7]}" + f"{links_htmls.format(results['id'])}"
-                if logic:
+                if self.status_show_photo:
                     data_photo = self.get_photos(results['id'])
                     photo_lst = []
                     for index, photo in enumerate(data_photo):
@@ -434,11 +461,14 @@ class Users:
                         else:
                             break
                     hotels_dict[txt] = photo_lst
+                else:
+                    hotels_dict[txt] = ['']
+
 
         self.__search_hotels = count
         self.__all_hotels = hotels_dict
 
-        with open('hotel.json', 'w') as f:
+        with open('hotel.json', 'w', encoding='utf-8') as f:
             json.dump(self.all_hotels, f, indent=4)
 
     def get_city_id(self) -> str:
@@ -486,6 +516,21 @@ class Users:
               f"currency: {self.__currency}\ndiff_date: {self.__diff_date}\ncommand: {self.__command}\n" \
               f"search_hotels: {self.__search_hotels}"
         return txt
+
+    def history(self):
+
+        self.__history = ["Последний запрос:\n",
+                          f"Время запроса: {datetime.datetime.now()}\n",
+                          f"Команда: {self.__command}\n",
+                          f"Город поиска: {self.__search_city}\n",
+                          f"Дата заезда: {self.__checkIn}\n",
+                          f"Дата выезда: {self.__checkOut}\n",
+                          f"Язык поиска: {self.__language}\n",
+                          f"Количество отелей: {self.__search_hotels}"]
+        return self.__history
+
+
+
 
 
 class MyStyleCalendar(WMonthTelegramCalendar):
