@@ -16,7 +16,7 @@ def comands_message(message):
     print(message)
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
-
+    user[message.chat.id].clearCache()
     if message.text.lower() == "/help":
         bot.send_message(message.from_user.id, info_help,
                          reply_markup=user[message.from_user.id].getStart_kbd())

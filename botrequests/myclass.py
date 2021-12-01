@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from telegram_bot_calendar import WMonthTelegramCalendar, DAY
+from telegram_bot_calendar import WYearTelegramCalendar, DAY
 import datetime
 import requests
 from decouple import config
@@ -529,13 +529,36 @@ class Users:
                           f"Количество отелей: {self.__search_hotels}"]
         return self.__history
 
+    def clearCache(self):
+
+        self.__search_hotels: int = 0
+        self.__id_city: str = ''
+        self.__checkIn: str = ''
+        self.__checkOut: str = ''
+        self.__count_show_hotels: int = 0
+        self.__all_hotels: dict = dict()
+        self.__count_show_photo: int = 0
+        self.__status_show_photo: bool = False
+        self.__price_min_max: dict = dict()
+        self.__distance_min_max: dict = dict()
+        self.__language: str = ''
+        self.__currency: str = ''
+        self.__diff_date: int = 0
+        self.__command: str = ''
+        self.__mes_id_hotel: int = 0
+        self.__mes_id_photo: int = 0
+        self.__start_index_hotel: int = -1
+        self.__start_index_photo: int = -1
+        self.__hotel_forward_triger: bool = True
+        self.__hotel_backward_triger: bool = False
+        self.__photo_backward_triger: bool = False
+        self.__photo_forward_triger: bool = True
 
 
 
 
-class MyStyleCalendar(WMonthTelegramCalendar):
-    """ Класс календаря
-    """
+
+class Mycalendar(WYearTelegramCalendar):
+    first_step = DAY
     prev_button = "⬅️"
     next_button = "➡️"
-    first_step = DAY
