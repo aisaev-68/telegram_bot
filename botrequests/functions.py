@@ -15,22 +15,19 @@ bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
 user = {}
 
-loc_dict1 = {'ru_RU': ['Выберите дату заезда:', 'Выберите дату выезда:', 'Будут выведены 25 отелей:',
-                       'Показать фотографии отелей?',
-                       'Укажите количество отелей, которые необходимо вывести (не более 25):',
-                       'Количество фотографий, которые необходимо вывести в результате (не более 5)?',
-                       'Дата выезда должна быть больше даты въезда.Повторите ввод.',
-                       'Город должен содержать только буквы, повторите ввод.',
+loc_txt = {'ru_RU': ['Город должен содержать только буквы, повторите ввод.', 'Выберите дату заезда:',
                        'Такой город не найден. Повторите поиск.', 'В каком городе будем искать?',
-                       'Количество должно состоять из цифр, повторите ввод'
+                       'Выберите дату выезда:', 'Укажите количество отелей, которые необходимо вывести (не более 25)',
+                       'Показать фотографии отелей?', 'Выберите количество фото для загрузки:',
+                       'Дата выезда должна быть больше даты въезда.Повторите ввод.',
+                       'Последняя гостиница', 'Первая гостиница', 'Последнее фото', 'Первое фото'
                        ],
-             'en_US': ['Select check-in date:', 'Select check-out date:', '25 hotels will be displayed:',
-                       'Show photos of hotels?', 'Specify the number of hotels to be displayed (no more than 25):',
-                       'The number of photos to be displayed as a result (no more than 5)?',
+             'en_US': ['The city must only contain letters, please re-enter.', 'Select check-in date:',
+                       'No such city has been found. Repeat the search. ',' In which city are we looking? ',
+                       'Select check-out date:', 'Indicate the number of hotels to be displayed (no more than 25)',
+                       'Show photos of hotels?', 'Select the number of photos to upload:',
                        'The check-out date must be greater than the check-in date. Please re-enter.',
-                       'The city must only contain letters, please re-enter.',
-                       'No such city has been found. Repeat the search.', ' In which city are we looking? ',
-                       'The number must consist of numbers, please re-enter'
+                       'The last hotel', 'The first hotel', 'Last photo', 'First photo'
                        ]
              }
 
@@ -56,7 +53,7 @@ def next_step_city(mess):
         if idcity is not None:
             user[mess.chat.id].id_city = idcity
             loc = user[mess.chat.id].language[:2]
-            msg = bot.send_message(chat_id=mess.chat.id, text="Выберите дату *заезда*",
+            msg = bot.send_message(chat_id=mess.chat.id, text="Выберите дату *ЗАЕЗДА*",
                                    parse_mode='MARKDOWN',
                                    reply_markup=MyStyleCalendar(calendar_id=1, locale=loc).build()[0])
             user[mess.chat.id].message_id_photo = msg.message_id
@@ -69,7 +66,7 @@ def next_step_city(mess):
 
 def next_step_date(m):
     loc = user[m.chat.id].language[:2]
-    bot.edit_message_text(text="Выберите дату *выезда*", chat_id=m.chat.id,
+    bot.edit_message_text(text="Выберите дату *ВЫЕЗДА*", chat_id=m.chat.id,
                           message_id=user[m.chat.id].message_id_photo,
                           parse_mode='MARKDOWN',
                           disable_web_page_preview=True,
@@ -92,8 +89,7 @@ def next_step_show_photo(message):
 
 def next_step_count_photo(mess):
     """
-    Функция проверки на корректность ввода количества отелей в городе.
-    В случае положительного ответа, вызываем функцию 'range_request_price'.
+    Функция
     :param mess: объект входящего сообщения от пользователя
     """
     bot.edit_message_text(text="Выберите количество фото для загрузки", chat_id=mess.chat.id,
@@ -103,7 +99,7 @@ def next_step_count_photo(mess):
 
 def next_step_show_info(mess):
     """
-    Функция проверки на корректность ввода количества отображаемых изображений с отелями.
+    Функция
     :param mess: объект входящего сообщения от пользователя
     """
     print(user[mess.chat.id])
