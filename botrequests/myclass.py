@@ -555,10 +555,7 @@ class Users:
         self.__photo_forward_triger: bool = True
 
 
-
-
-
-class Mycalendar(WYearTelegramCalendar):
+class MyStyleCalendar(WYearTelegramCalendar):
     first_step = DAY
     prev_button = "⬅️"
     next_button = "➡️"

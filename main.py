@@ -40,6 +40,7 @@ def comands_message(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def inline(call):
+    user[call.message.chat.id].clearCache()
     if call.data == '/lowprice':
         user[call.message.chat.id].command = call.message.text
         msg = bot.send_message(call.message.from_user.id, 'В каком городе будем искать?')
