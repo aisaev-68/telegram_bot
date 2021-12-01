@@ -30,7 +30,7 @@ class Users:
         self.__last_name: str = user.from_user.last_name
         self.__id_user: int = user.from_user.id
         self.__search_city: str = user.text
-        self.__search_hotels: int = 0
+        self.__search_count_hotels: int = 0
         self.__id_city: str = ''
         self.__checkIn: str = ''
         self.__checkOut: str = ''
@@ -465,7 +465,7 @@ class Users:
                     hotels_dict[txt] = ['']
 
 
-        self.__search_hotels = count
+        self.__search_count_hotels = count
         self.__all_hotels = hotels_dict
 
         with open('hotel.json', 'w', encoding='utf-8') as f:
@@ -514,7 +514,7 @@ class Users:
               f"count_show_hotels: {self.__count_show_hotels}\n" \
               f"count_show_photo: {self.__count_show_photo}\nlanguage: {self.__language}\n" \
               f"currency: {self.__currency}\ndiff_date: {self.__diff_date}\ncommand: {self.__command}\n" \
-              f"search_hotels: {self.__search_hotels}"
+              f"search_hotels: {self.__search_count_hotels}"
         return txt
 
     def history(self):
@@ -526,12 +526,12 @@ class Users:
                           f"Дата заезда: {self.__checkIn}\n",
                           f"Дата выезда: {self.__checkOut}\n",
                           f"Язык поиска: {self.__language}\n",
-                          f"Количество отелей: {self.__search_hotels}"]
+                          f"Количество отелей: {self.__search_count_hotels}"]
         return self.__history
 
     def clearCache(self):
-
-        self.__search_hotels: int = 0
+        self.__search_city: str = ''
+        self.__search_count_hotels: int = 0
         self.__id_city: str = ''
         self.__checkIn: str = ''
         self.__checkOut: str = ''
