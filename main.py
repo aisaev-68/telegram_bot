@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from botrequests.functions import bot, next_step_city, user, logging
+from botrequests.handlers import bot, next_step_city, user, logging
 from botrequests.myclass import Users
-from datetime import datetime
+from botrequests.requests_api import datetime
+from botrequests.locales import info_help
 
-
-info_help = '● /help — помощь по командам бота\n' \
-       '● /lowprice — вывод самых дешёвых отелей в городе\n' \
-       '● /highprice — вывод самых дорогих отелей в городе\n' \
-       '● /bestdeal — вывод отелей, наиболее подходящих по цене и расположению от центра\n' \
-       '● /history - вывод истории поиска отелей'
 
 @bot.message_handler(commands=["help", "lowprice", "highprice", "bestdeal", "history"])
 def comands_message(message):
@@ -38,6 +33,7 @@ def comands_message(message):
             history = 'Ваша история пуста'
         bot.send_message(message.from_user.id, (",").join(history), parse_mode="Markdown")
 
+
 @bot.callback_query_handler(func=lambda call: True)
 def inline(call):
     user[call.message.chat.id].clearCache()
@@ -56,6 +52,7 @@ def inline(call):
 if __name__ == '__main__':
     while True:
         try:
+            logging.error(f"{datetime.now()} - Бот запущен")
             bot.polling(none_stop=True, interval=0)
         except Exception as ex:
             logging.error(f"{datetime.now()} - {ex}")

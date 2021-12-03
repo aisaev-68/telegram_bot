@@ -2,11 +2,13 @@
 
 from requests import get
 import re
-from myclass import MyStyleCalendar
-
+from locales import loctxt
+from requests_api import get_city_id
 from decouple import config
 from telebot import TeleBot, types
 import logging
+from telegram_bot_calendar import WYearTelegramCalendar, DAY
+
 
 logging.basicConfig(filename="logger.log", level=logging.INFO)
 
@@ -15,27 +17,15 @@ bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
 user = {}
 
-loc_txt = {'ru_RU': ['Город должен содержать только буквы, повторите ввод.', 'Выберите дату заезда:',
-                       'Такой город не найден. Повторите поиск.', 'В каком городе будем искать?',
-                       'Выберите дату выезда:', 'Укажите количество отелей, которые необходимо вывести (не более 25)',
-                       'Показать фотографии отелей?', 'Выберите количество фото для загрузки:',
-                       'Дата выезда должна быть больше даты въезда.Повторите ввод.',
-                       'Последняя гостиница', 'Первая гостиница', 'Последнее фото', 'Первое фото'
-                       ],
-             'en_US': ['The city must only contain letters, please re-enter.', 'Select check-in date:',
-                       'No such city has been found. Repeat the search. ',' In which city are we looking? ',
-                       'Select check-out date:', 'Indicate the number of hotels to be displayed (no more than 25)',
-                       'Show photos of hotels?', 'Select the number of photos to upload:',
-                       'The check-out date must be greater than the check-in date. Please re-enter.',
-                       'The last hotel', 'The first hotel', 'Last photo', 'First photo'
-                       ]
-             }
-
+class MyStyleCalendar(WYearTelegramCalendar):
+    first_step = DAY
+    prev_button = "⬅️"
+    next_button = "➡️"
 
 def next_step_city(mess):
     """
     Функция проверки на корректность ввода названия города.
-    В случае корректного ввода города прелагает ввести дату въезда в гостиницу.
+    В случае корректного ввода города предлагает ввести дату заезда в гостиницу.
     :param mess: объект входящего сообщения от пользователя
     """
 
@@ -45,13 +35,13 @@ def next_step_city(mess):
         bot.register_next_step_handler(err_city, next_step_city)
     else:
         user[mess.chat.id].search_city = mess.text
-        user[mess.chat.id].language = (
-            "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', mess.text)) else "en_US")
+        user[mess.chat.id].language = ("ru_RU" if re.findall(r'[А-Яа-яЁё -]',
+                                                             re.sub(r'[- ]', '', mess.text)) else "en_US")
         user[mess.chat.id].currency = ('RUB' if user[mess.chat.id].language == 'ru_RU' else 'USD')
-        idcity = user[mess.chat.id].get_city_id()
+        user[mess.chat.id].id_city = get_city_id(user[mess.chat.id].search_city,
+                                                 user[mess.chat.id].language)
 
-        if idcity is not None:
-            user[mess.chat.id].id_city = idcity
+        if user[mess.chat.id].id_city is not None:
             loc = user[mess.chat.id].language[:2]
             msg = bot.send_message(chat_id=mess.chat.id, text="Выберите дату *ЗАЕЗДА*",
                                    parse_mode='MARKDOWN',
@@ -64,80 +54,90 @@ def next_step_city(mess):
             bot.register_next_step_handler(msg, next_step_city)
 
 
-def next_step_date(m):
-    loc = user[m.chat.id].language[:2]
-    bot.edit_message_text(text="Выберите дату *ВЫЕЗДА*", chat_id=m.chat.id,
-                          message_id=user[m.chat.id].message_id_photo,
+def next_step_date(message):
+    """Функция предлагает календарь для ввода даты выезда
+    :param m: входящее сообщение от пользователя
+    """
+    loc = user[message.chat.id].language[:2]
+    bot.edit_message_text(text="Выберите дату *ВЫЕЗДА*", chat_id=message.chat.id,
+                          message_id=user[message.chat.id].message_id_photo,
                           parse_mode='MARKDOWN',
                           disable_web_page_preview=True,
                           reply_markup=MyStyleCalendar(calendar_id=1, locale=loc).build()[0])
 
+
 def next_step_count_hotels(message):
+    """Функция предлагает указать количество отелей, которые необходимо вывести
+    :param message: входящее сообщение от пользователя
+    """
     #time.sleep(1)
     bot.edit_message_text(text="Укажите количество отелей, которые необходимо вывести (не более 25)",
                           chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id_photo,
-                          reply_markup=user[message.chat.id].getHotel_kbd())
+                          reply_markup=user[message.chat.id].hotel_class.getHotel_kbd())
 
 
 def next_step_show_photo(message):
+    """Функция предлагает показ фотографии отелей
+    :param message: входящее сообщение от пользователя
+    """
 
     bot.edit_message_text(text="Показать фотографии отелей?", chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id_photo,
-                          reply_markup=user[message.chat.id].getPhoto_yes_no())
+                          reply_markup=user[message.chat.id].hotel_class.getPhoto_yes_no())
 
 
 def next_step_count_photo(mess):
     """
-    Функция
+    Функция прелагает выбрать количество фото для загрузки
     :param mess: объект входящего сообщения от пользователя
     """
     bot.edit_message_text(text="Выберите количество фото для загрузки", chat_id=mess.chat.id,
                           message_id=user[mess.chat.id].message_id_photo,
-                          reply_markup=user[mess.chat.id].getKbd_photo_numb())
+                          reply_markup=user[mess.chat.id].hotel_class.getKbd_photo_numb())
 
 
 def next_step_show_info(mess):
     """
-    Функция
+    Функция для вывода информации в чат
     :param mess: объект входящего сообщения от пользователя
     """
     print(user[mess.chat.id])
     bot.delete_message(chat_id=mess.chat.id, message_id=user[mess.chat.id].message_id_photo)
-    querystring = user[mess.chat.id].queryAPI(user[mess.chat.id].command)
-    user[mess.chat.id].low_price(querystring)
-    get_hotel = user[mess.chat.id].hotel_forward()
+    querystring = user[mess.chat.id].queryAPI(user[mess.chat.id].command, user[mess.chat.id].getQuerystring())
+    user[mess.chat.id].hotels_act.hotel_query(querystring)
+    get_hotel = user[mess.chat.id].hotels_act.hotel_forward()
     if user[mess.chat.id].status_show_photo:
-        get_photo = user[mess.chat.id].photo_forward()
+        get_photo = user[mess.chat.id].hotels_act.photo_forward()
         mes_id_photo = bot.send_photo(mess.chat.id, get(get_photo).content)
         user[mess.chat.id].message_id_photo = mes_id_photo.message_id
-        keyword_bot = user[mess.chat.id].getShow_kbd()
+        keyboard_bot = user[mess.chat.id].hotels_act.getShow_kbd()
     else:
-        keyword_bot = user[mess.chat.id].getShowNoPhoto_kbd()
+        keyboard_bot = user[mess.chat.id].hotels_act.getShowNoPhoto_kbd()
 
     meshotel = bot.send_message(chat_id=mess.chat.id, text="*" + get_hotel + "*",
                                 parse_mode='MARKDOWN',
                                 disable_web_page_preview=True,
-                                reply_markup=keyword_bot)
+                                reply_markup=keyboard_bot)
     user[mess.chat.id].message_id_hotel = meshotel.message_id
 
 
 def next_hotel_show(call):
-    get_hotel = user[call.message.chat.id].hotel_forward()
+    get_hotel = user[call.message.chat.id].hotels_act.hotel_forward()
     if user[call.message.chat.id].status_show_photo:
-        keyword_bot = user[call.message.chat.id].getShow_kbd()
-        photo = user[call.message.chat.id].photo_forward()
+        keyboard_bot = user[call.message.chat.id].hotels_act.getShow_kbd()
+        photo = user[call.message.chat.id].hotels_act.photo_forward()
         bot.edit_message_media(chat_id=call.message.chat.id,
                                message_id=user[call.message.chat.id].message_id_photo,
                                media=types.InputMediaPhoto(get(photo).content))
     else:
-        keyword_bot = user[call.message.chat.id].getShowNoPhoto_kbd()
+        keyboard_bot = user[call.message.chat.id].hotels_act.getShowNoPhoto_kbd()
 
     bot.edit_message_text(chat_id=call.message.chat.id,
                           message_id=user[call.message.chat.id].message_id_hotel,
                           text="*" + get_hotel + "*", parse_mode='MARKDOWN',
                           disable_web_page_preview=True,
-                          reply_markup=keyword_bot)
+                          reply_markup=keyboard_bot)
     #bot.answer_callback_query(callback_query_id=call.id)
 
 
@@ -161,7 +161,11 @@ def inline(call):
 
     elif call.data.startswith('cbcal_1'):
         result, key, step = MyStyleCalendar(calendar_id=1).process(call.data)
-        if result:
+        if not result:
+            bot.edit_message_reply_markup(chat_id=call.message.chat.id,
+                                          message_id=user[call.message.chat.id].message_id_photo,
+                                          reply_markup=key)
+        elif result:
             if not user[call.message.chat.id].checkIn:
                 user[call.message.chat.id].checkIn = result.strftime('%Y-%m-%d')
                 next_step_date(call.message)
@@ -172,13 +176,15 @@ def inline(call):
                     user[call.message.chat.id].diff_date()
                     next_step_count_hotels(call.message)
                 else:
-                    bot.send_message(call.message.chat.id,
-                                     "Дата выезда должна быть больше даты въезда.Повторите ввод.",
-                                     reply_markup=MyStyleCalendar(calendar_id=1).build()[0])
+                    bot.edit_message_text(text="Дата выезда должна быть больше даты заезда.Повторите ввод.",
+                                          chat_id=call.message.chat.id,
+                                          message_id=user[call.message.chat.id].message_id_photo,
+                                          reply_markup=MyStyleCalendar(calendar_id=1,
+                                                                       locale=user[call.message.chat.id].language).build()[0])
 
     elif call.data == "hotel_forward":
 
-        if user[call.message.chat.id].getHotel_forward_triger():
+        if user[call.message.chat.id].hotels_act.getHotel_forward_triger():
             next_hotel_show(call)
             bot.answer_callback_query(callback_query_id=call.id)
         else:
@@ -186,23 +192,23 @@ def inline(call):
 
     elif call.data == "hotel_backward":
 
-        if user[call.message.chat.id].getHotel_backward_triger():
+        if user[call.message.chat.id].hotels_act.getHotel_backward_triger():
             next_hotel_show(call)
             bot.answer_callback_query(callback_query_id=call.id)
         else:
             bot.answer_callback_query(callback_query_id=call.id, text='Первая гостиница')
 
     elif call.data == "photo_backward":  # фото назад
-        if user[call.message.chat.id].photo_backward_triger:
-            photo = user[call.message.chat.id].photo_backward()
+        if user[call.message.chat.id].hotels_act.photo_backward_triger:
+            photo = user[call.message.chat.id].hotels_act.photo_backward()
             photo_show(call, photo)
             bot.answer_callback_query(callback_query_id=call.id)
         else:
             bot.answer_callback_query(callback_query_id=call.id, text='Первое фото')
 
     elif call.data == "photo_forward":  # фото вперед
-        if user[call.message.chat.id].photo_forward_triger:
-            photo = user[call.message.chat.id].photo_forward()
+        if user[call.message.chat.id].hotels_act.photo_forward_triger:
+            photo = user[call.message.chat.id].hotels_act.photo_forward()
             photo_show(call, photo)
             bot.answer_callback_query(callback_query_id=call.id)
         else:

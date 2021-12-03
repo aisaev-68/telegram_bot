@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from telebot import types
+from handlers import types
+
 
 class HotelKbd:
-    """ Класс для выводы количества гостиниц
+    """ Класс инлайн кнопок для выводы количества гостиниц
     """
     def __init__(self) -> None:
         self.__markup = types.InlineKeyboardMarkup(row_width=5)
@@ -18,7 +19,7 @@ class HotelKbd:
 
 
 class PhotoYesNo:
-    """ Класс кнопок с вопросом будем ли искать фото?
+    """ Класс инлайн кнопок с вопросом будем ли искать фото?
     """
     def __init__(self) -> None:
         self.__markup = types.InlineKeyboardMarkup()
@@ -30,7 +31,7 @@ class PhotoYesNo:
 
 
 class PhotoNumbKbd:
-    """ Класс для выбора количества выводимых фото
+    """ Класс инлайн кнопок для выбора количества выводимых фото
     """
     def __init__(self) -> None:
         self.__markup = types.InlineKeyboardMarkup(row_width=5)
@@ -45,9 +46,9 @@ class PhotoNumbKbd:
 
 
 class InlKbShow:
-    """ Класс кнопок с навигацией по гостиницам и соответствущим ему фотографиям
-       """
-    def __init__(self):
+    """ Класс инлайн кнопок с навигацией по гостиницам и соответствущим ему фотографиям
+    """
+    def __init__(self) -> None:
         self.__markup = types.InlineKeyboardMarkup()
         self.__markup.row_width = 3
         self.__markup.add(types.InlineKeyboardButton(text="⬅️", callback_data='hotel_backward'),
@@ -61,10 +62,11 @@ class InlKbShow:
     def get_show_kbd(self) -> types.InlineKeyboardMarkup:
         return self.__markup
 
+
 class InlKbShowNoPhoto:
-    """ Класс кнопок с навигацией по гостиницам и соответствущим ему фотографиям
-       """
-    def __init__(self):
+    """ Класс инлайн кнопок с навигацией по гостиницам
+    """
+    def __init__(self) -> None:
         self.__markup = types.InlineKeyboardMarkup()
         self.__markup.row_width = 3
         self.__markup.add(types.InlineKeyboardButton(text="⬅️", callback_data='hotel_backward'),
@@ -75,11 +77,13 @@ class InlKbShowNoPhoto:
         return self.__markup
 
 class StartKbd:
+    """ Класс кнопок с командами
+    """
 
-    def __init__(self):
-        self.__markup_start = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        self.__markup_start.row(types.KeyboardButton('/help'), types.KeyboardButton('/start'),
+    def __init__(self) -> None:
+        self.__markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        self.__markup.row(types.KeyboardButton('/help'), types.KeyboardButton('/start'),
                                 types.KeyboardButton('/lowprice'), types.KeyboardButton('/history'))
 
     def get_start_kbd(self) -> types.ReplyKeyboardMarkup:
-        return self.__markup_start
+        return self.__markup
