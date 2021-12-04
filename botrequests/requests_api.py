@@ -104,40 +104,42 @@ def get_photos(id_photo: str) -> list:
     return photo_list
 
 
-def hotel_query(querystring: dict) -> dict:
+def hotel_query(querystring: dict, source_dict: dict) -> dict:
     """
     Формирует словарь отелей на основе запроса пользователя и сортировкой по цене.
     Если отелей не найдено возвращает пустой словарь.
     :param querystring: строка запроса
+    :param source_dict: исходные данные для формирования строки запроса
     :return result_low: возвращает словарь (название отеля, адрес,
     фотографии отеля (если пользователь счёл необходимым их вывод)
     """
 
     url_low = config('URL_LOW')
     hotels_dict = {}
+    loc = source_dict['language']
     low_data = req_api(url_low, querystring)
-    loc = querystring['language']
+
     links_htmls = ("https://ru.hotels.com/ho{}" if loc[:2] == "ru"
                        else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
     # TypeError: 'NoneType' object is not subscriptable
     if low_data:
         for hotel_count, results in enumerate(low_data['data']['body']['searchResults']['results']):
-            summa = float(querystring['getDiff_date']) * results["ratePlan"]["price"]["exactCurrent"]
-            if querystring['count_show_hotels'] != hotel_count:
-                txt = f"⭐⭐⭐{loc_txt[loc][0]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐⭐⭐\n" \
+            summa = float(source_dict['diff_date']) * results["ratePlan"]["price"]["exactCurrent"]
+            if source_dict['count_show_hotels'] != hotel_count:
+                txt = f"⭐⭐⭐*{loc_txt[loc][0]} {(results.get('starRating')) if results.get('starRating') else '--'}*⭐⭐⭐\n" \
                       f"🏨 {loc_txt[loc][1]} {results['name']}\n" \
                       f"       {loc_txt[loc][2]} {results['address'].get('countryName')}, {results['address'].get('locality')}, " \
                       f"{(results['address'].get('streetAddress') if results['address'].get('streetAddress') else 'Нет данных об адресе...')}\n" \
                       f"🚗 {loc_txt[loc][3]} {results['landmarks'][0]['distance']}\n" \
-                      f"📅 {loc_txt[loc][4]} {querystring['checkIn']} - {querystring['checkOut']}\n" \
-                      f"💵 {loc_txt[loc][5]} {(results['ratePlan']['price']['exactCurrent']) if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}\n" \
-                      f"💵 {loc_txt[loc][6].format(querystring['getDiff_date'])} {summa if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}\n" \
+                      f"📅 {loc_txt[loc][4]} {source_dict['checkIn']} - {source_dict['checkOut']}\n" \
+                      f"💵 {loc_txt[loc][5]} *{(results['ratePlan']['price']['exactCurrent']) if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}*\n" \
+                      f"💵 {loc_txt[loc][6].format(source_dict['diff_date'])} *{summa if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}*\n" \
                       f"🌍 {loc_txt[loc][7]}" + f"{links_htmls.format(results['id'])}"
-                if querystring['status_show_photo']:
+                if source_dict['status_show_photo']:
                     data_photo = get_photos(results['id'])
                     photo_lst = []
                     for index, photo in enumerate(data_photo):
-                        if querystring['count_show_photo'] != index:
+                        if source_dict['count_show_photo'] != index:
                             photo_lst.append(photo)
                         else:
                             break

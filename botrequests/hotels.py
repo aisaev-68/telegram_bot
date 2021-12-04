@@ -1,4 +1,4 @@
-from keyboards import PhotoYesNo, InlKbShow, HotelKbd, PhotoNumbKbd, InlKbShowNoPhoto, StartKbd, types
+from keyboards import PhotoYesNo, InlKbShow, HotelKbd, PhotoNumbKbd, InlKbShowNoPhoto, InlMenu, types
 
 
 class Hotel:
@@ -9,7 +9,7 @@ class Hotel:
         self.__get_kbd_photo_numb: types.InlineKeyboardMarkup = PhotoNumbKbd().get_kbd_photo_numb()
         self.__get_show_kbd: types.InlineKeyboardMarkup = InlKbShow().get_show_kbd()
         self.__get_show_no_photo_kbd: types.InlineKeyboardMarkup = InlKbShowNoPhoto().get_show_kbd()
-        self.__start_keyboard = StartKbd().get_start_kbd()
+        self._inln_menu = InlMenu().get_inl_menu()
         self.__start_index_hotel: int = -1
         self.__start_index_photo: int = -1
         self.__hotel_forward_triger: bool = True
@@ -17,6 +17,14 @@ class Hotel:
         self.__photo_backward_triger: bool = False
         self.__photo_forward_triger: bool = True
         self.__photo_list: list = []
+
+    def getInln_menu(self) -> types.InlineKeyboardMarkup:
+        return self._inln_menu
+
+    def setInln_menu(self, markup) -> None:
+        self._inln_menu = markup
+
+    inln_menu = property(getInln_menu, setInln_menu)
 
     def getAllhotels(self) -> dict:
         return self.__all_hotels
@@ -41,8 +49,6 @@ class Hotel:
     def getShowNoPhoto_kbd(self) -> types.InlineKeyboardMarkup:
         return self.__get_show_no_photo_kbd
 
-    def getStart_kbd(self):
-        return self.__start_keyboard
 
     def getHotel_forward_triger(self):
         return self.__hotel_forward_triger

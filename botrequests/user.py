@@ -2,6 +2,7 @@
 
 from hotels import Hotel
 import datetime
+import database
 
 
 class Users:
@@ -166,7 +167,15 @@ class Users:
 
     hotels_act = property(gethotel_class)
 
-    def getQuerystring(self):
+    def getStatus_show_photo(self) -> bool:
+        return self.__status_show_photo
+
+    def setStatus_show_photo(self, status:bool):
+        self.__status_show_photo = status
+
+    status_show_photo = property(getStatus_show_photo, setStatus_show_photo)
+
+    def getSource_dict(self):
 
         return {'id_user': self.__id_user, 'search_city':self.__search_city, 'id_city': self.__id_city,
                 'checkIn': self.__checkIn, 'checkOut': self.__checkOut,
@@ -196,4 +205,23 @@ class Users:
         self.__currency: str = ''
         self.__mes_id_hotel: int = 0
         self.__mes_id_photo: int = 0
+
+    def insert_db(self):
+        con = database.sql_connection()
+        database.sql_table(con)
+        print(self.__id_user, self.__username, self.__command,
+                                      str(datetime.datetime.now()), list(self.__hotels_act.all_hotels.keys()))
+        if len(database.sql_fetch(con, self.__id_user)) == 0:
+            database.sql_insert(con, (self.__id_user, self.__username, self.__command,
+                                      str(datetime.datetime.now()), str(list(self.__hotels_act.all_hotels.keys()))))
+        else:
+            database.sql_update(con, (self.__id_user, self.__command, str(datetime.datetime.now()),
+                                      str(list(self.__hotels_act.all_hotels.keys()))))
+
+    def history(self):
+        con = database.sql_connection()
+        database.sql_table(con)
+        return database.sql_fetch(con, self.__id_user)
+
+
 

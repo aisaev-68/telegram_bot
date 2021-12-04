@@ -2,6 +2,20 @@
 
 from handlers import types
 
+class InlMenu:
+    """ Класс инлайн кнопок для выбора количества выводимых фото
+    """
+    def __init__(self) -> None:
+        self.__markup = types.InlineKeyboardMarkup(row_width=1)
+        self.__markup.add(types.InlineKeyboardButton(text='МЕНЮ ВЫБОРА', callback_data='menu'),
+                          types.InlineKeyboardButton(text='Дешёвые', callback_data='/lowprice'),
+                          types.InlineKeyboardButton(text='Дорогие', callback_data='/highprice'),
+                          types.InlineKeyboardButton(text='Лучщие', callback_data='/bestdeal'),
+                          types.InlineKeyboardButton(text='История', callback_data='/history'))
+
+
+    def get_inl_menu(self) -> types.InlineKeyboardMarkup:
+        return self.__markup
 
 class HotelKbd:
     """ Класс инлайн кнопок для выводы количества гостиниц
@@ -58,6 +72,8 @@ class InlKbShow:
         self.__markup.add(types.InlineKeyboardButton(text="⬅️", callback_data='photo_backward'),
                           types.InlineKeyboardButton(text="Фото", callback_data='photo'),
                           types.InlineKeyboardButton(text="➡️", callback_data='photo_forward'))
+        self.__markup.row_width = 1
+        self.__markup.add(types.InlineKeyboardButton(text="Меню", callback_data='kb_menu'))
 
     def get_show_kbd(self) -> types.InlineKeyboardMarkup:
         return self.__markup
@@ -72,18 +88,9 @@ class InlKbShowNoPhoto:
         self.__markup.add(types.InlineKeyboardButton(text="⬅️", callback_data='hotel_backward'),
                           types.InlineKeyboardButton(text="Гостиница", callback_data='hotel'),
                           types.InlineKeyboardButton(text="➡️", callback_data='hotel_forward'))
+        self.__markup.row_width = 1
+        self.__markup.add(types.InlineKeyboardButton(text="Меню", callback_data='kb_menu'))
 
     def get_show_kbd(self) -> types.InlineKeyboardMarkup:
         return self.__markup
 
-class StartKbd:
-    """ Класс кнопок с командами
-    """
-
-    def __init__(self) -> None:
-        self.__markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        self.__markup.row(types.KeyboardButton('/help'), types.KeyboardButton('/start'),
-                                types.KeyboardButton('/lowprice'), types.KeyboardButton('/history'))
-
-    def get_start_kbd(self) -> types.ReplyKeyboardMarkup:
-        return self.__markup
