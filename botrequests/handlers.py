@@ -3,17 +3,16 @@
 from requests import get
 import re
 from locales import loctxt
-from requests_api import get_city_id
-from decouple import config
 from telebot import TeleBot, types
-import logging
+from requests_api import get_city_id, query_string, hotel_query
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
-
-
-logging.basicConfig(filename="logger.log", level=logging.INFO)
+from decouple import config
+import logging
 
 
 bot = TeleBot(config('TELEGRAM_API_TOKEN'))
+
+logging.basicConfig(filename="logger.log", level=logging.INFO)
 
 user = {}
 
@@ -104,8 +103,8 @@ def next_step_show_info(mess):
     """
     print(user[mess.chat.id])
     bot.delete_message(chat_id=mess.chat.id, message_id=user[mess.chat.id].message_id_photo)
-    querystring = user[mess.chat.id].queryAPI(user[mess.chat.id].command, user[mess.chat.id].getQuerystring())
-    user[mess.chat.id].hotels_act.hotel_query(querystring)
+    querystring = query_string(user[mess.chat.id].command, user[mess.chat.id].getQuerystring())
+    user[mess.chat.id].hotels_act.all_hotels = hotel_query(querystring)
     get_hotel = user[mess.chat.id].hotels_act.hotel_forward()
     if user[mess.chat.id].status_show_photo:
         get_photo = user[mess.chat.id].hotels_act.photo_forward()

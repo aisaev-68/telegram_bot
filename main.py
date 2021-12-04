@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from botrequests.handlers import bot, next_step_city, user, logging
-from botrequests.myclass import Users
-from botrequests.requests_api import datetime
+from botrequests.handlers import next_step_city, user, bot, logging, config
+from users import Users
+from datetime import datetime
 from botrequests.locales import info_help
 
 

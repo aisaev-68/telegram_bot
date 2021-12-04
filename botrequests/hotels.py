@@ -18,6 +18,13 @@ class Hotel:
         self.__photo_forward_triger: bool = True
         self.__photo_list: list = []
 
+    def getAllhotels(self) -> dict:
+        return self.__all_hotels
+
+    def setAllhotels(self, hotel_dict: dict) -> None:
+        self.__all_hotels = hotel_dict
+
+    all_hotels = property(getAllhotels, setAllhotels)
 
     def getHotel_kbd(self) -> types.InlineKeyboardMarkup:
         return self._get_hotel_kbd

@@ -2,7 +2,7 @@
 
 import requests
 import json
-from botrequests.handlers import logging, config
+from handlers import logging, config
 from datetime import datetime
 from locales import loc_txt
 
