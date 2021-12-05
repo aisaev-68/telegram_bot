@@ -2,6 +2,7 @@ from keyboards import PhotoYesNo, InlKbShow, HotelKbd, PhotoNumbKbd, InlKbShowNo
 
 
 class Hotel:
+    """Класс Hotel для хранения гостиниц и фото"""
     def __init__(self):
         self.__all_hotels: dict = dict()
         self._get_hotel_kbd: types.InlineKeyboardMarkup = HotelKbd().get_hotel_kbd()
@@ -73,7 +74,7 @@ class Hotel:
     photo_backward_triger = property(getPhoto_backward_triger, setPhoto_backward_triger)
 
 
-    def hotel_forward(self):
+    def hotel_forward(self) -> str:
         """
         Функция возвращает отель по индексу
 
@@ -92,12 +93,11 @@ class Hotel:
             self.__hotel_forward_triger = False
         hotel = list(self.__all_hotels)[self.__start_index_hotel]
         self.__photo_list = self.__all_hotels[hotel]
-        print('Вперед', self.__start_index_hotel)
 
         return hotel
 
 
-    def hotel_backward(self):
+    def hotel_backward(self) -> str:
         """
         Функция возвращает отель по индексу
 
@@ -117,11 +117,9 @@ class Hotel:
         hotel = list(self.__all_hotels)[self.__start_index_hotel]
         self.__photo_list = self.__all_hotels[hotel]
 
-        print('Назад', self.__start_index_hotel)
-
         return hotel
 
-    def photo_forward(self):
+    def photo_forward(self) -> str:
         """
         Функция возвращает следующее фото отеля по индексу
 
@@ -138,7 +136,7 @@ class Hotel:
 
         return self.__photo_list[self.__start_index_photo]
 
-    def photo_backward(self):
+    def photo_backward(self) -> str:
         """
         Функция возвращает предыдущее фото отеля по индексу
 
@@ -155,6 +153,10 @@ class Hotel:
         return self.__photo_list[self.__start_index_photo]
 
     def clearCache(self):
+        """Функция для очистки не нужных данных
+        при формировании нового запроса
+        """
+
         self.__all_hotels: dict = dict()
         self.__start_index_hotel: int = -1
         self.__start_index_photo: int = -1

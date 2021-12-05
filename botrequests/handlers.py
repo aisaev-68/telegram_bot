@@ -9,19 +9,18 @@ from telebot import TeleBot, types
 from requests_api import get_city_id, query_string, hotel_query
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
 
-
-
-
 bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
 logging.basicConfig(filename="logger.log", level=logging.INFO)
 
 user = {}
 
+
 class MyStyleCalendar(WYearTelegramCalendar):
     first_step = DAY
     prev_button = "⬅️"
     next_button = "➡️"
+
 
 def next_step_city(mess):
     """
@@ -42,7 +41,7 @@ def next_step_city(mess):
         m = bot.send_message(mess.from_user.id, 'Ищем....')
         user[m.chat.id].message_id_photo = m.message_id
         user[m.chat.id].id_city = get_city_id(user[m.chat.id].search_city,
-                                                 user[m.chat.id].language)
+                                              user[m.chat.id].language)
 
         if user[m.chat.id].id_city is not None:
             loc = user[m.chat.id].language[:2]
@@ -50,7 +49,6 @@ def next_step_city(mess):
                                   message_id=user[m.chat.id].message_id_photo,
                                   parse_mode='MARKDOWN',
                                   reply_markup=MyStyleCalendar(calendar_id=1, locale=loc).build()[0])
-
 
         else:
             bot.send_message(mess.chat.id, "Такой город не найден. Повторите поиск.")
@@ -74,7 +72,7 @@ def next_step_count_hotels(message):
     """Функция предлагает указать количество отелей, которые необходимо вывести
     :param message: входящее сообщение от пользователя
     """
-    #time.sleep(1)
+    # time.sleep(1)
     bot.edit_message_text(text="Укажите количество отелей, которые необходимо вывести (не более 25)",
                           chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id_photo,
@@ -106,13 +104,12 @@ def next_step_show_info(mess):
     Функция для вывода информации в чат
     :param mess: объект входящего сообщения от пользователя
     """
-    print(user[mess.chat.id])
     bot.delete_message(chat_id=mess.chat.id, message_id=user[mess.chat.id].message_id_photo)
     querystring = query_string(user[mess.chat.id].command, user[mess.chat.id].getSource_dict())
     user[mess.chat.id].hotels_act.all_hotels = hotel_query(querystring, user[mess.chat.id].getSource_dict())
     get_hotel = user[mess.chat.id].hotels_act.hotel_forward()
     user[mess.chat.id].insert_db()
-    #bot.send_message(mess.from_user.id, 'Минуточку....')
+    # bot.send_message(mess.from_user.id, 'Минуточку....')
     if user[mess.chat.id].status_show_photo:
         get_photo = user[mess.chat.id].hotels_act.photo_forward()
         mes_id_photo = bot.send_photo(mess.chat.id, get(get_photo).content)
@@ -126,8 +123,6 @@ def next_step_show_info(mess):
                                 disable_web_page_preview=True,
                                 reply_markup=keyboard_bot)
     user[mess.chat.id].message_id_hotel = meshotel.message_id
-
-
 
 
 def next_hotel_show(call):
@@ -148,23 +143,14 @@ def next_hotel_show(call):
                           reply_markup=keyboard_bot)
 
 
-
 def photo_show(call, photo):
-
     bot.edit_message_media(chat_id=call.message.chat.id,
                            message_id=user[call.message.chat.id].message_id_photo,
                            media=types.InputMediaPhoto(get(photo).content))
 
 
-def next_menu(call):
-    user[call.message.chat.id].command = call.data
-    msg = bot.edit_message_text(text='В каком городе будем искать?', chat_id=call.message.chat.id,
-                                message_id=user[call.message.chat.id].message_id_photo)
-    next_step_city(msg)
-
 @bot.callback_query_handler(func=lambda call: True)
 def inline(call):
-
     if call.data in ['yes_photo', 'no_photo']:
         user[call.message.chat.id].status_show_photo = (True if call.data == 'yes_photo' else False)
         if user[call.message.chat.id].status_show_photo:
@@ -192,7 +178,8 @@ def inline(call):
                                           chat_id=call.message.chat.id,
                                           message_id=user[call.message.chat.id].message_id_photo,
                                           reply_markup=MyStyleCalendar(calendar_id=1,
-                                                                       locale=user[call.message.chat.id].language).build()[0])
+                                                                       locale=user[
+                                                                           call.message.chat.id].language).build()[0])
 
     elif call.data == "hotel_forward":
 
@@ -229,25 +216,37 @@ def inline(call):
     elif call.data in ["five", "ten", "fifteen", "twenty", "twenty_five"]:
         numbers_hotel = {"five": 5, "ten": 10, "fifteen": 15, "twenty": 20, "twenty_five": 25}
         user[call.message.chat.id].count_show_hotels = numbers_hotel[call.data]
+        bot.answer_callback_query(callback_query_id=call.id)
         next_step_show_photo(call.message)
 
     elif call.data in ["one_photo", "two_photo", "three_photo", "four_photo", "five_photo"]:
         numbers_photo = {"one_photo": 1, "two_photo": 2, "three_photo": 3, "four_photo": 4, "five_photo": 5}
         user[call.message.chat.id].count_show_photo = numbers_photo[call.data]
+        bot.answer_callback_query(callback_query_id=call.id)
         next_step_show_info(call.message)
 
-    elif call.data in ['/lowprice', '/high_price']:
+    elif call.data in ['/lowprice', '/highprice']:
         user[call.message.chat.id].command = call.data
         msg = bot.edit_message_text(text='В каком городе будем искать?', chat_id=call.message.chat.id,
                                     message_id=user[call.message.chat.id].message_id_photo)
+        bot.answer_callback_query(callback_query_id=call.id)
         bot.register_next_step_handler(msg, next_step_city)
 
     elif call.data == '/history':
         history = user[call.message.chat.id].history()
+        txt = 'История запросов:\n'
         if len(history) == 0:
-            history = ['Ваша история пуста',]
-        bot.edit_message_text(text=(",").join(history), chat_id=call.message.chat.id,
-                                    message_id=user[call.message.chat.id].message_id_photo)
+            txt += ['Ваша история пуста', ]
+            bot.send_message(chat_id=call.message.chat.id, text=txt)
+        else:
+            for item in history:
+                txt += f'Команда:{item[0]}\nДата запроса: {item[1]}\n{item[2]}'
+                bot.send_message(chat_id=call.message.chat.id, text=txt, disable_web_page_preview=True)
+                txt = ''
+        bot.answer_callback_query(callback_query_id=call.id)
+        msg = bot.send_message(chat_id=call.message.chat.id, text='👇',
+                               reply_markup=user[call.message.chat.id].hotels_act.inln_menu)
+        user[call.message.chat.id].message_id_photo = msg.message_id
 
     elif call.data == 'kb_menu':
         if user[call.message.chat.id].status_show_photo:
@@ -257,10 +256,9 @@ def inline(call):
                            message_id=user[call.message.chat.id].message_id_hotel)
         user[call.message.chat.id].clearCache()
         msg = bot.send_message(chat_id=call.message.chat.id, text='👇',
-                         reply_markup=user[call.message.chat.id].hotels_act.inln_menu)
+                               reply_markup=user[call.message.chat.id].hotels_act.inln_menu)
+        bot.answer_callback_query(callback_query_id=call.id)
         user[call.message.chat.id].message_id_photo = msg.message_id
-
-
 
     # else:
     #     logging.info(call.message.chat.id, f'Команда {call.data} не обработана')

@@ -6,8 +6,8 @@ from handlers import logging, config
 from datetime import datetime
 from locales import loc_txt
 
-
 commands = ["/lowprice", "/highprice", "/bestdeal", "/history"]
+
 
 def req_api(url: str, querystring: dict):
     """
@@ -32,14 +32,14 @@ def req_api(url: str, querystring: dict):
         logging.error(f"{datetime.now()} - {ercon} - Нет, соединения с сервисом.")
         return None
     except TimeoutError as ertime:
-        logging.error('Время ожидания запроса истекло {}'.format(ertime) )
+        logging.error('Время ожидания запроса истекло {}'.format(ertime))
         return None
     except json.decoder.JSONDecodeError as erjson:
         logging.error(f'JSON decode error {erjson} - Получен некорректный ответ от сервиса.')
         return None
 
-def query_string(command: str, qstring: dict) -> dict:
 
+def query_string(command: str, qstring: dict) -> dict:
     """Функция формирует строку запроса в виде словаря
     :param command: команды от пользователя /lowprice, /highprice, /bestdeal
     :param qstring: исходные данные в виде словаря для формирования строки запроса
@@ -120,7 +120,7 @@ def hotel_query(querystring: dict, source_dict: dict) -> dict:
     low_data = req_api(url_low, querystring)
 
     links_htmls = ("https://ru.hotels.com/ho{}" if loc[:2] == "ru"
-                       else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
+                   else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
     # TypeError: 'NoneType' object is not subscriptable
     if low_data:
         for hotel_count, results in enumerate(low_data['data']['body']['searchResults']['results']):
@@ -147,7 +147,3 @@ def hotel_query(querystring: dict, source_dict: dict) -> dict:
                 else:
                     hotels_dict[txt] = ['']
         return hotels_dict
-
-
-
-

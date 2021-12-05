@@ -7,7 +7,7 @@ import database
 
 class Users:
     """
-    Класс пользователя, с параметрами необходимые для формирования запроса.
+    Класс пользователя, с параметрами необходимыми для формирования запроса.
         Args: user: объект вх. сообщения от пользователя
     """
 
@@ -176,6 +176,7 @@ class Users:
     status_show_photo = property(getStatus_show_photo, setStatus_show_photo)
 
     def getSource_dict(self):
+        """Функция возвращает исходные данные для формирования запроса к API"""
 
         return {'id_user': self.__id_user, 'search_city':self.__search_city, 'id_city': self.__id_city,
                 'checkIn': self.__checkIn, 'checkOut': self.__checkOut,
@@ -190,6 +191,7 @@ class Users:
                 'diff_date': self.diff_date()}
 
     def clearCache(self):
+        """Функция для очистки не нужных данных при формировании нового запроса"""
         self.__hotels_act.clearCache()
         self.__search_city: str = ''
         self.__command: str = ''
@@ -207,21 +209,27 @@ class Users:
         self.__mes_id_photo: int = 0
 
     def insert_db(self):
+        """Функция вставки данных (ID пользователя, имени, команды,
+        даты запроса, списка найденных гостиниц без фото) в базу данных
+        """
         con = database.sql_connection()
         database.sql_table(con)
-        print(self.__id_user, self.__username, self.__command,
-                                      str(datetime.datetime.now()), list(self.__hotels_act.all_hotels.keys()))
-        if len(database.sql_fetch(con, self.__id_user)) == 0:
-            database.sql_insert(con, (self.__id_user, self.__username, self.__command,
-                                      str(datetime.datetime.now()), str(list(self.__hotels_act.all_hotels.keys()))))
-        else:
-            database.sql_update(con, (self.__id_user, self.__command, str(datetime.datetime.now()),
-                                      str(list(self.__hotels_act.all_hotels.keys()))))
+        txt = ''
+        for item in list(self.__hotels_act.all_hotels.keys()):
+            txt += item
+        database.sql_insert(con, (self.__id_user, self.__username, self.__command,
+                                      str(datetime.datetime.now()), txt))
+        con.close()
 
-    def history(self):
+    def history(self) -> list:
+        """Функция возвращет историю запросов пользователя (команда,
+        дата запроса, список найденных гостиниц без фото
+        """
         con = database.sql_connection()
         database.sql_table(con)
-        return database.sql_fetch(con, self.__id_user)
+        rows = database.sql_fetch(con, self.__id_user)
+        con.close()
+        return rows
 
 
 
