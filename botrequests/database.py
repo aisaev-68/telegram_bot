@@ -17,7 +17,7 @@ def sql_connection():
 def sql_table(con) -> None:
     cur = con.cursor()
     cur.execute(
-        "CREATE TABLE IF NOT EXISTS users(user_id INT, name TEXT, command TEXT, date TEXT, hotels TEXT);")
+        "CREATE TABLE IF NOT EXISTS users(user_id INTEGER PRIMARY KEY, name TEXT, command TEXT, date TEXT, hotels TEXT);")
     con.commit()
 
 
@@ -28,6 +28,7 @@ def sql_insert(con, entities: tuple) -> None:
 
 
 def sql_fetch(con, id: int) -> list:
+    """Функция выборки истории запросов и ответов из базы (последние 2 записи пользователя)"""
     cur = con.cursor()
     cur.execute(f"SELECT command, date, hotels FROM users WHERE user_id ={id} ORDER BY rowid DESC LIMIT 2;")
     rows = cur.fetchall()

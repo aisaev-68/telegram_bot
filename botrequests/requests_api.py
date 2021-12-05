@@ -147,3 +147,5 @@ def hotel_query(querystring: dict, source_dict: dict) -> dict:
                 else:
                     hotels_dict[txt] = ['']
         return hotels_dict
+    else:
+        return {}

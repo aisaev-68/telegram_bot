@@ -107,22 +107,28 @@ def next_step_show_info(mess):
     bot.delete_message(chat_id=mess.chat.id, message_id=user[mess.chat.id].message_id_photo)
     querystring = query_string(user[mess.chat.id].command, user[mess.chat.id].getSource_dict())
     user[mess.chat.id].hotels_act.all_hotels = hotel_query(querystring, user[mess.chat.id].getSource_dict())
-    get_hotel = user[mess.chat.id].hotels_act.hotel_forward()
-    user[mess.chat.id].insert_db()
-    # bot.send_message(mess.from_user.id, 'Минуточку....')
-    if user[mess.chat.id].status_show_photo:
-        get_photo = user[mess.chat.id].hotels_act.photo_forward()
-        mes_id_photo = bot.send_photo(mess.chat.id, get(get_photo).content)
-        user[mess.chat.id].message_id_photo = mes_id_photo.message_id
-        keyboard_bot = user[mess.chat.id].hotels_act.getShow_kbd()
-    else:
-        keyboard_bot = user[mess.chat.id].hotels_act.getShowNoPhoto_kbd()
+    if len(user[mess.chat.id].hotels_act.all_hotels) > 0:
+        get_hotel = user[mess.chat.id].hotels_act.hotel_forward()
+        user[mess.chat.id].insert_db()
+        # bot.send_message(mess.from_user.id, 'Минуточку....')
+        if user[mess.chat.id].status_show_photo:
+            get_photo = user[mess.chat.id].hotels_act.photo_forward()
+            mes_id_photo = bot.send_photo(mess.chat.id, get(get_photo).content)
+            user[mess.chat.id].message_id_photo = mes_id_photo.message_id
+            keyboard_bot = user[mess.chat.id].hotels_act.getShow_kbd()
+        else:
+            keyboard_bot = user[mess.chat.id].hotels_act.getShowNoPhoto_kbd()
 
-    meshotel = bot.send_message(chat_id=mess.chat.id, text=get_hotel,
-                                parse_mode='MARKDOWN',
-                                disable_web_page_preview=True,
-                                reply_markup=keyboard_bot)
-    user[mess.chat.id].message_id_hotel = meshotel.message_id
+        meshotel = bot.send_message(chat_id=mess.chat.id, text=get_hotel,
+                                    parse_mode='MARKDOWN',
+                                    disable_web_page_preview=True,
+                                    reply_markup=keyboard_bot)
+        user[mess.chat.id].message_id_hotel = meshotel.message_id
+    else:
+        bot.send_message(mess.chat.id, "Гостиницы не найдены. Повторите поиск.")
+        msg = bot.send_message(mess.chat.id, 'В каком городе будем искать?')
+        bot.register_next_step_handler(msg, next_step_city)
+
 
 
 def next_hotel_show(call):
@@ -260,5 +266,6 @@ def inline(call):
         bot.answer_callback_query(callback_query_id=call.id)
         user[call.message.chat.id].message_id_photo = msg.message_id
 
-    # else:
-    #     logging.info(call.message.chat.id, f'Команда {call.data} не обработана')
+    else:
+        bot.answer_callback_query(callback_query_id=call.id)
+        #logging.info(call.message.chat.id, f'Команда {call.data} не обработана')

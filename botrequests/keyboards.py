@@ -12,7 +12,7 @@ class InlMenu:
         self.__markup.add(types.InlineKeyboardButton(text='≡ МЕНЮ ВЫБОРА', callback_data='menu'),
                           types.InlineKeyboardButton(text='💵 Дешёвые', callback_data='/lowprice'),
                           types.InlineKeyboardButton(text='💰 Дорогие', callback_data='/highprice'),
-                          types.InlineKeyboardButton(text='⭐ Лучщие', callback_data='/bestdeal'),
+                          types.InlineKeyboardButton(text='⭐ Лучшие', callback_data='/bestdeal'),
                           types.InlineKeyboardButton(text='🗃 История', callback_data='/history'))
 
     def get_inl_menu(self) -> types.InlineKeyboardMarkup:
