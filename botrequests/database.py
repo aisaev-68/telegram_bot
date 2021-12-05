@@ -17,7 +17,7 @@ def sql_connection():
 def sql_table(con) -> None:
     cur = con.cursor()
     cur.execute(
-        "CREATE TABLE IF NOT EXISTS users(user_id INTEGER PRIMARY KEY, name TEXT, command TEXT, date TEXT, hotels TEXT);")
+        "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, name TEXT, command TEXT, date TEXT, hotels TEXT);")
     con.commit()
 
 

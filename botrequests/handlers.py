@@ -51,6 +51,7 @@ def next_step_city(mess):
                                   reply_markup=MyStyleCalendar(calendar_id=1, locale=loc).build()[0])
 
         else:
+            user[mess.chat.id].clearCache()
             bot.send_message(mess.chat.id, "Такой город не найден. Повторите поиск.")
             msg = bot.send_message(mess.chat.id, 'В каком городе будем искать?')
             bot.register_next_step_handler(msg, next_step_city)
@@ -125,6 +126,7 @@ def next_step_show_info(mess):
                                     reply_markup=keyboard_bot)
         user[mess.chat.id].message_id_hotel = meshotel.message_id
     else:
+        user[mess.chat.id].clearCache()
         bot.send_message(mess.chat.id, "Гостиницы не найдены. Повторите поиск.")
         msg = bot.send_message(mess.chat.id, 'В каком городе будем искать?')
         bot.register_next_step_handler(msg, next_step_city)
