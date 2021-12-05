@@ -77,7 +77,7 @@ def next_step_count_hotels(message):
     bot.edit_message_text(text="Укажите количество отелей, которые необходимо вывести (не более 25)",
                           chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id_photo,
-                          reply_markup=user[message.chat.id].hotels_act.getHotel_kbd())
+                          reply_markup=user[message.chat.id].getHotel_kbd())
 
 
 def next_step_show_photo(message):
@@ -87,7 +87,7 @@ def next_step_show_photo(message):
 
     bot.edit_message_text(text="Показать фотографии отелей?", chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id_photo,
-                          reply_markup=user[message.chat.id].hotels_act.getPhoto_yes_no())
+                          reply_markup=user[message.chat.id].getPhoto_yes_no())
 
 
 def next_step_count_photo(mess):
@@ -97,7 +97,7 @@ def next_step_count_photo(mess):
     """
     bot.edit_message_text(text="Выберите количество фото для загрузки", chat_id=mess.chat.id,
                           message_id=user[mess.chat.id].message_id_photo,
-                          reply_markup=user[mess.chat.id].hotels_act.getKbd_photo_numb())
+                          reply_markup=user[mess.chat.id].getKbd_photo_numb())
 
 
 def next_step_show_info(mess):
@@ -107,18 +107,18 @@ def next_step_show_info(mess):
     """
     bot.delete_message(chat_id=mess.chat.id, message_id=user[mess.chat.id].message_id_photo)
     querystring = query_string(user[mess.chat.id].command, user[mess.chat.id].getSource_dict())
-    user[mess.chat.id].hotels_act.all_hotels = hotel_query(querystring, user[mess.chat.id].getSource_dict())
-    if len(user[mess.chat.id].hotels_act.all_hotels) > 0:
-        get_hotel = user[mess.chat.id].hotels_act.hotel_forward()
+    user[mess.chat.id].all_hotels = hotel_query(querystring, user[mess.chat.id].getSource_dict())
+    if len(user[mess.chat.id].all_hotels) > 0:
+        get_hotel = user[mess.chat.id].hotel_forward()
         user[mess.chat.id].insert_db()
         # bot.send_message(mess.from_user.id, 'Минуточку....')
         if user[mess.chat.id].status_show_photo:
-            get_photo = user[mess.chat.id].hotels_act.photo_forward()
+            get_photo = user[mess.chat.id].photo_forward()
             mes_id_photo = bot.send_photo(mess.chat.id, get(get_photo).content)
             user[mess.chat.id].message_id_photo = mes_id_photo.message_id
-            keyboard_bot = user[mess.chat.id].hotels_act.getShow_kbd()
+            keyboard_bot = user[mess.chat.id].getShow_kbd()
         else:
-            keyboard_bot = user[mess.chat.id].hotels_act.getShowNoPhoto_kbd()
+            keyboard_bot = user[mess.chat.id].getShowNoPhoto_kbd()
 
         meshotel = bot.send_message(chat_id=mess.chat.id, text=get_hotel,
                                     parse_mode='MARKDOWN',
@@ -134,15 +134,15 @@ def next_step_show_info(mess):
 
 
 def next_hotel_show(call):
-    get_hotel = user[call.message.chat.id].hotels_act.hotel_forward()
+    get_hotel = user[call.message.chat.id].hotel_forward()
     if user[call.message.chat.id].status_show_photo:
-        keyboard_bot = user[call.message.chat.id].hotels_act.getShow_kbd()
-        photo = user[call.message.chat.id].hotels_act.photo_forward()
+        keyboard_bot = user[call.message.chat.id].getShow_kbd()
+        photo = user[call.message.chat.id].photo_forward()
         bot.edit_message_media(chat_id=call.message.chat.id,
                                message_id=user[call.message.chat.id].message_id_photo,
                                media=types.InputMediaPhoto(get(photo).content))
     else:
-        keyboard_bot = user[call.message.chat.id].hotels_act.getShowNoPhoto_kbd()
+        keyboard_bot = user[call.message.chat.id].getShowNoPhoto_kbd()
 
     bot.edit_message_text(chat_id=call.message.chat.id,
                           message_id=user[call.message.chat.id].message_id_hotel,
@@ -175,11 +175,13 @@ def inline(call):
         elif result:
             if not user[call.message.chat.id].checkIn:
                 user[call.message.chat.id].checkIn = result.strftime('%Y-%m-%d')
+                bot.answer_callback_query(callback_query_id=call.id, text='Дата заезда выбрана')
                 next_step_date(call.message)
 
             else:
                 user[call.message.chat.id].checkOut = result.strftime('%Y-%m-%d')
                 if user[call.message.chat.id].checkOut > user[call.message.chat.id].checkIn:
+                    bot.answer_callback_query(callback_query_id=call.id, text='Дата выезда выбрана')
                     next_step_count_hotels(call.message)
                 else:
                     bot.edit_message_text(text="Дата выезда должна быть больше даты заезда.Повторите ввод.",
@@ -191,33 +193,33 @@ def inline(call):
 
     elif call.data == "hotel_forward":
 
-        if user[call.message.chat.id].hotels_act.getHotel_forward_triger():
-            next_hotel_show(call)
+        if user[call.message.chat.id].getHotel_forward_triger():
             bot.answer_callback_query(callback_query_id=call.id)
+            next_hotel_show(call)
         else:
             bot.answer_callback_query(callback_query_id=call.id, text='Последняя гостиница')
 
     elif call.data == "hotel_backward":
 
-        if user[call.message.chat.id].hotels_act.getHotel_backward_triger():
-            next_hotel_show(call)
+        if user[call.message.chat.id].getHotel_backward_triger():
             bot.answer_callback_query(callback_query_id=call.id)
+            next_hotel_show(call)
         else:
             bot.answer_callback_query(callback_query_id=call.id, text='Первая гостиница')
 
     elif call.data == "photo_backward":  # фото назад
-        if user[call.message.chat.id].hotels_act.photo_backward_triger:
-            photo = user[call.message.chat.id].hotels_act.photo_backward()
-            photo_show(call, photo)
+        if user[call.message.chat.id].photo_backward_triger:
+            photo = user[call.message.chat.id].photo_backward()
             bot.answer_callback_query(callback_query_id=call.id)
+            photo_show(call, photo)
         else:
             bot.answer_callback_query(callback_query_id=call.id, text='Первое фото')
 
     elif call.data == "photo_forward":  # фото вперед
-        if user[call.message.chat.id].hotels_act.photo_forward_triger:
-            photo = user[call.message.chat.id].hotels_act.photo_forward()
-            photo_show(call, photo)
+        if user[call.message.chat.id].photo_forward_triger:
+            photo = user[call.message.chat.id].photo_forward()
             bot.answer_callback_query(callback_query_id=call.id)
+            photo_show(call, photo)
         else:
             bot.answer_callback_query(callback_query_id=call.id, text='Последнее фото')
 
@@ -253,7 +255,7 @@ def inline(call):
                 txt = ''
         bot.answer_callback_query(callback_query_id=call.id)
         msg = bot.send_message(chat_id=call.message.chat.id, text='👇',
-                               reply_markup=user[call.message.chat.id].hotels_act.inln_menu)
+                               reply_markup=user[call.message.chat.id].inln_menu)
         user[call.message.chat.id].message_id_photo = msg.message_id
 
     elif call.data == 'kb_menu':
@@ -264,10 +266,9 @@ def inline(call):
                            message_id=user[call.message.chat.id].message_id_hotel)
         user[call.message.chat.id].clearCache()
         msg = bot.send_message(chat_id=call.message.chat.id, text='👇',
-                               reply_markup=user[call.message.chat.id].hotels_act.inln_menu)
+                               reply_markup=user[call.message.chat.id].inln_menu)
         bot.answer_callback_query(callback_query_id=call.id)
         user[call.message.chat.id].message_id_photo = msg.message_id
 
     else:
         bot.answer_callback_query(callback_query_id=call.id)
-        #logging.info(call.message.chat.id, f'Команда {call.data} не обработана')

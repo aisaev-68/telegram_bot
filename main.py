@@ -16,7 +16,7 @@ def comands_message(message):
     if message.text.lower() == "/help":
         m = bot.send_message(chat_id=message.chat.id,
                              text=info_help['ru_RU'],
-                             reply_markup=user[message.chat.id].hotels_act.inln_menu)
+                             reply_markup=user[message.chat.id].inln_menu)
         user[m.chat.id].message_id_photo = m.message_id
 
     elif message.text.lower() == '/start':
@@ -24,7 +24,7 @@ def comands_message(message):
                           "И я готов подобрать для Вас отель 🏨"
         m = bot.send_message(chat_id=message.from_user.id,
                              text=start_help_text,
-                             reply_markup=user[message.chat.id].hotels_act.inln_menu)
+                             reply_markup=user[message.chat.id].inln_menu)
         user[m.chat.id].message_id_photo = m.message_id
 
     elif message.text.lower() == '/lowprice':
@@ -44,7 +44,7 @@ def comands_message(message):
         bot.edit_message_text(text=txt, chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id_photo)
         msg = bot.send_message(chat_id=call.message.chat.id, text='👇',
-                               reply_markup=user[message.chat.id].hotels_act.inln_menu)
+                               reply_markup=user[message.chat.id].inln_menu)
         user[message.chat.id].message_id_photo = msg.message_id
 
 
@@ -64,7 +64,7 @@ def inline(call):
                 bot.send_message(chat_id=call.message.chat.id, text=txt, disable_web_page_preview=True)
                 txt = ''
         msg = bot.send_message(chat_id=call.message.chat.id, text='👇',
-                               reply_markup=user[call.message.chat.id].hotels_act.inln_menu)
+                               reply_markup=user[call.message.chat.id].inln_menu)
         user[call.message.chat.id].message_id_photo = msg.message_id
     elif call.data in ['/lowprice', '/highprice']:
         user[call.message.chat.id].command = call.data
