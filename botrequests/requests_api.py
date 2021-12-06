@@ -146,6 +146,8 @@ def hotel_query(querystring: dict, source_dict: dict) -> dict:
                     hotels_dict[txt] = photo_lst
                 else:
                     hotels_dict[txt] = ['']
+        with open('hotel.json', 'w') as f:
+            json.dump(hotels_dict, f, indent=4)
         return hotels_dict
     else:
         return {}

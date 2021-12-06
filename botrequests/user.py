@@ -198,21 +198,12 @@ class Users:
     def getHotel_backward_triger(self):
         return self.__hotel_backward_triger
 
-    def getPhoto_forward_triger(self):
-        return self.__photo_forward_triger
-
-    def setPhoto_forward_triger(self, trig):
-        self.__photo_forward_triger = trig
-
-    photo_forward_triger = property(getPhoto_forward_triger, setPhoto_forward_triger)
 
     def getPhoto_backward_triger(self):
         return self.__photo_backward_triger
 
-    def setPhoto_backward_triger(self, trig):
-        self.__photo_backward_triger = trig
-
-    photo_backward_triger = property(getPhoto_backward_triger, setPhoto_backward_triger)
+    def getPhoto_forward_triger(self):
+        return self.__photo_forward_triger
 
 
     def hotel_forward(self) -> str:
@@ -221,21 +212,16 @@ class Users:
 
         """
         lst_hotels = list(self.__all_hotels)
+
         self.__start_index_photo = -1
-        self.__photo_backward_triger = False
-        self.__photo_forward_triger = True
-        if self.__start_index_hotel < len(lst_hotels):
+        if self.__start_index_hotel < len(lst_hotels) - 1:
             self.__start_index_hotel += 1
-            if self.__start_index_hotel > 0:
-                self.__hotel_backward_triger = True
-        else:
-            self.__start_index_hotel = len(lst_hotels) - 1
-            self.__hotel_forward_triger = False
         if self.__start_index_hotel == len(lst_hotels) - 1:
             self.__hotel_forward_triger = False
+            self.__hotel_backward_triger = True
         hotel = lst_hotels[self.__start_index_hotel]
         self.__photo_list = self.__all_hotels[hotel]
-
+        print('Вперед:', self.__start_index_hotel)
         return hotel
 
 
@@ -244,20 +230,17 @@ class Users:
         Функция возвращает отель по индексу
 
         """
+        lst_hotels = list(self.__all_hotels)
+
         self.__start_index_photo = -1
-        self.__photo_backward_triger = False
-        self.__photo_forward_triger = True
-        if self.__start_index_hotel > 0:
+        if 0 < self.__start_index_hotel <= len(lst_hotels) - 1:
             self.__start_index_hotel -= 1
-            self.__hotel_forward_triger = True
-        else:
-            self.__start_index_hotel = 0
-            self.__hotel_backward_triger = False
         if self.__start_index_hotel == 0:
             self.__hotel_backward_triger = False
-
-        hotel = list(self.__all_hotels)[self.__start_index_hotel]
+            self.__hotel_forward_triger = True
+        hotel = lst_hotels[self.__start_index_hotel]
         self.__photo_list = self.__all_hotels[hotel]
+        print('Назад:', self.__start_index_hotel)
 
         return hotel
 
@@ -266,31 +249,29 @@ class Users:
         Функция возвращает следующее фото отеля по индексу
 
         """
-        if self.__start_index_photo < len(self.__photo_list):
-            self.__start_index_photo += 1
-            if self.__start_index_photo > 0:
+        try:
+            if self.__start_index_photo < len(self.__photo_list) - 1:
+                self.__start_index_photo += 1
+            if self.__start_index_photo == len(self.__photo_list) - 1:
+                self.__photo_forward_triger = False
                 self.__photo_backward_triger = True
-        else:
-            self.__start_index_photo = len(self.__photo_list) - 1
-            self.__photo_forward_triger = False
-        if self.__start_index_photo == len(self.__photo_list) - 1:
-            self.__photo_forward_triger = False
 
-        return self.__photo_list[self.__start_index_photo]
+            return self.__photo_list[self.__start_index_photo]
+        except IndexError:
+            print(11111)
 
     def photo_backward(self) -> str:
         """
         Функция возвращает предыдущее фото отеля по индексу
 
         """
-        if self.__start_index_photo > 0:
+
+        if 0 < self.__start_index_photo <= len(self.__photo_list) - 1:
             self.__start_index_photo -= 1
-            self.__photo_forward_triger = True
-        else:
-            self.__start_index_photo = 0
-            self.__photo_backward_triger = False
+
         if self.__start_index_photo == 0:
             self.__photo_backward_triger = False
+            self.__photo_forward_triger = True
 
         return self.__photo_list[self.__start_index_photo]
 
@@ -379,6 +360,9 @@ class Users:
         rows = database.sql_fetch(con, self.__id_user)
         con.close()
         return rows
+
+
+
 
 
 

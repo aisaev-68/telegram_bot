@@ -133,8 +133,8 @@ def next_step_show_info(mess):
 
 
 
-def next_hotel_show(call):
-    get_hotel = user[call.message.chat.id].hotel_forward()
+def next_hotel_show(call, get_hotel):
+
     if user[call.message.chat.id].status_show_photo:
         keyboard_bot = user[call.message.chat.id].getShow_kbd()
         photo = user[call.message.chat.id].photo_forward()
@@ -192,23 +192,23 @@ def inline(call):
                                                                            call.message.chat.id].language).build()[0])
 
     elif call.data == "hotel_forward":
-
         if user[call.message.chat.id].getHotel_forward_triger():
+            get_hotel = user[call.message.chat.id].hotel_forward()
+            next_hotel_show(call, get_hotel)
             bot.answer_callback_query(callback_query_id=call.id)
-            next_hotel_show(call)
         else:
             bot.answer_callback_query(callback_query_id=call.id, text='Последняя гостиница')
 
     elif call.data == "hotel_backward":
-
         if user[call.message.chat.id].getHotel_backward_triger():
+            get_hotel = user[call.message.chat.id].hotel_backward()
+            next_hotel_show(call, get_hotel)
             bot.answer_callback_query(callback_query_id=call.id)
-            next_hotel_show(call)
         else:
             bot.answer_callback_query(callback_query_id=call.id, text='Первая гостиница')
 
     elif call.data == "photo_backward":  # фото назад
-        if user[call.message.chat.id].photo_backward_triger:
+        if user[call.message.chat.id].getPhoto_backward_triger():
             photo = user[call.message.chat.id].photo_backward()
             bot.answer_callback_query(callback_query_id=call.id)
             photo_show(call, photo)
@@ -216,7 +216,7 @@ def inline(call):
             bot.answer_callback_query(callback_query_id=call.id, text='Первое фото')
 
     elif call.data == "photo_forward":  # фото вперед
-        if user[call.message.chat.id].photo_forward_triger:
+        if user[call.message.chat.id].getPhoto_forward_triger:
             photo = user[call.message.chat.id].photo_forward()
             bot.answer_callback_query(callback_query_id=call.id)
             photo_show(call, photo)
@@ -250,7 +250,7 @@ def inline(call):
             bot.send_message(chat_id=call.message.chat.id, text=txt)
         else:
             for item in history:
-                txt += f'Команда:{item[0]}\nДата запроса: {item[1]}\n{item[2]}'
+                txt += f'Команда:{item[0]}\nДата запроса: {item[1]}\n{item[2]}\n'
                 bot.send_message(chat_id=call.message.chat.id, text=txt, disable_web_page_preview=True)
                 txt = ''
         bot.answer_callback_query(callback_query_id=call.id)
