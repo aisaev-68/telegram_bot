@@ -114,9 +114,14 @@ def next_step_show_info(mess):
         # bot.send_message(mess.from_user.id, 'Минуточку....')
         if user[mess.chat.id].status_show_photo:
             get_photo = user[mess.chat.id].photo_forward()
-            mes_id_photo = bot.send_photo(mess.chat.id, get(get_photo).content)
-            user[mess.chat.id].message_id_photo = mes_id_photo.message_id
-            keyboard_bot = user[mess.chat.id].getShow_kbd()
+            if get_photo:
+                mes_id_photo = bot.send_photo(mess.chat.id, get(get_photo).content)
+                user[mess.chat.id].message_id_photo = mes_id_photo.message_id
+                keyboard_bot = user[mess.chat.id].getShow_kbd()
+            else:
+                mes_id_photo = bot.send_photo(mess.chat.id, open('botrequests/images/f5ed7098_z.jpg', 'rb'))
+                user[mess.chat.id].message_id_photo = mes_id_photo.message_id
+                keyboard_bot = user[mess.chat.id].getShowNoPhoto_kbd()
         else:
             keyboard_bot = user[mess.chat.id].getShowNoPhoto_kbd()
 
@@ -136,11 +141,17 @@ def next_step_show_info(mess):
 def next_hotel_show(call, get_hotel):
 
     if user[call.message.chat.id].status_show_photo:
-        keyboard_bot = user[call.message.chat.id].getShow_kbd()
         photo = user[call.message.chat.id].photo_forward()
-        bot.edit_message_media(chat_id=call.message.chat.id,
-                               message_id=user[call.message.chat.id].message_id_photo,
-                               media=types.InputMediaPhoto(get(photo).content))
+        if photo:
+            keyboard_bot = user[call.message.chat.id].getShow_kbd()
+            bot.edit_message_media(chat_id=call.message.chat.id,
+                                   message_id=user[call.message.chat.id].message_id_photo,
+                                   media=types.InputMediaPhoto(get(photo).content))
+        else:
+            keyboard_bot = user[call.message.chat.id].getShowNoPhoto_kbd()
+            bot.edit_message_media(chat_id=call.message.chat.id,
+                                   message_id=user[call.message.chat.id].message_id_photo,
+                                   media=types.InputMediaPhoto(open('botrequests/images/f5ed7098_z.jpg', 'rb')))
     else:
         keyboard_bot = user[call.message.chat.id].getShowNoPhoto_kbd()
 
@@ -216,7 +227,7 @@ def inline(call):
             bot.answer_callback_query(callback_query_id=call.id, text='Первое фото')
 
     elif call.data == "photo_forward":  # фото вперед
-        if user[call.message.chat.id].getPhoto_forward_triger:
+        if user[call.message.chat.id].getPhoto_forward_triger():
             photo = user[call.message.chat.id].photo_forward()
             bot.answer_callback_query(callback_query_id=call.id)
             photo_show(call, photo)

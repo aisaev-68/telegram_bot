@@ -221,7 +221,7 @@ class Users:
             self.__hotel_backward_triger = True
         hotel = lst_hotels[self.__start_index_hotel]
         self.__photo_list = self.__all_hotels[hotel]
-        print('Вперед:', self.__start_index_hotel)
+        #print('Вперед:', self.__start_index_hotel)
         return hotel
 
 
@@ -240,7 +240,7 @@ class Users:
             self.__hotel_forward_triger = True
         hotel = lst_hotels[self.__start_index_hotel]
         self.__photo_list = self.__all_hotels[hotel]
-        print('Назад:', self.__start_index_hotel)
+        #print('Назад:', self.__start_index_hotel)
 
         return hotel
 
@@ -249,16 +249,17 @@ class Users:
         Функция возвращает следующее фото отеля по индексу
 
         """
-        try:
+        photo = ''
+        if len(self.__photo_list) > 0:
             if self.__start_index_photo < len(self.__photo_list) - 1:
                 self.__start_index_photo += 1
             if self.__start_index_photo == len(self.__photo_list) - 1:
                 self.__photo_forward_triger = False
                 self.__photo_backward_triger = True
-
-            return self.__photo_list[self.__start_index_photo]
-        except IndexError:
-            print(11111)
+            photo = self.__photo_list[self.__start_index_photo]
+            print('Вперед:', self.__start_index_photo)
+            return photo
+        return photo
 
     def photo_backward(self) -> str:
         """
@@ -272,7 +273,7 @@ class Users:
         if self.__start_index_photo == 0:
             self.__photo_backward_triger = False
             self.__photo_forward_triger = True
-
+        print('Назад:', self.__start_index_photo)
         return self.__photo_list[self.__start_index_photo]
 
     def diff_date(self) -> int:
