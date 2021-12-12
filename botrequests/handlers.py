@@ -146,6 +146,7 @@ async def ask_count_photo(message):
                                 reply_markup=user[message.chat.id].getKbd_photo_numb())
 
 
+
 async def step_show_info(message):
     """
     Функция для вывода информации в чат
