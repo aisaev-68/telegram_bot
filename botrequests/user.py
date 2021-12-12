@@ -2,7 +2,8 @@
 
 import datetime
 import database
-from keyboards import PhotoYesNo, InlKbShow, HotelKbd, PhotoNumbKbd, InlKbShowNoPhoto, InlMenu, types
+from keyboards import PhotoYesNo, HotelKbd, PhotoNumbKbd, Lang, types
+from locales import commands_bot
 
 
 class Users:
@@ -12,9 +13,9 @@ class Users:
     """
 
     def __init__(self, mess) -> None:
-        self.__username = (mess.from_user.username if mess.from_user.username else mess.from_user.first_name)
+        self.__username: str = mess.from_user.username
         self.__id_user: int = mess.from_user.id
-        self.__search_city: str = mess.text
+        self.__search_city: str = ''
         self.__command: str = ''
         self.__id_city: str = ''
         self.__checkIn: str = ''
@@ -23,158 +24,151 @@ class Users:
         self.__count_show_photo: int = 0
         self.__status_show_photo: bool = False
         self.__price_min_max: dict = dict()
-        self.__distance_min_max: dict = dict()
+        self.__distance_max: float = 0.0
         self.__language: str = ''
         self.__currency: str = ''
-        self.__mes_id_hotel: int = 0
-        self.__mes_id_photo: int = 0
         self._get_hotel_kbd: types.InlineKeyboardMarkup = HotelKbd().get_hotel_kbd()
-        self.__get_photo_yes_no: types.InlineKeyboardMarkup = PhotoYesNo().get_photo_yes_no()
         self.__get_kbd_photo_numb: types.InlineKeyboardMarkup = PhotoNumbKbd().get_kbd_photo_numb()
-        self.__get_show_kbd: types.InlineKeyboardMarkup = InlKbShow().get_show_kbd()
-        self.__get_show_no_photo_kbd: types.InlineKeyboardMarkup = InlKbShowNoPhoto().get_show_kbd()
-        self._inln_menu = InlMenu().get_inl_menu()
+        self._inl_lang = Lang().get_langkb()
+        self.__get_photo_yes_no: types.InlineKeyboardMarkup = PhotoYesNo().get_photo_yes_no()
         self.__all_hotels: dict = dict()
-        self.__start_index_hotel: int = -1
-        self.__start_index_photo: int = -1
-        self.__hotel_forward_triger: bool = True
-        self.__hotel_backward_triger: bool = False
-        self.__photo_backward_triger: bool = False
-        self.__photo_forward_triger: bool = True
-        self.__photo_list: list = []
+        self.__message_id: str = ''
+        self.__my_commands: list = []
+        self.__state: int = 0
 
-    def getUsername(self) -> str:
-        return self.__username
-
-    def setId_user(self, iduser: int) -> None:
-        self.__id_user = iduser
-
-    def getId_user(self) -> int:
-        return self.__id_user
-
-    id_user = property(getId_user, setId_user)
-
-    def setSearch_city(self, city: str) -> None:
-        self.__search_city = city
-
-    def getSearch_city(self) -> str:
+    @property
+    def search_city(self) -> str:
         return self.__search_city
 
-    search_city = property(getSearch_city, setSearch_city)
+    @search_city.setter
+    def search_city(self, city: str) -> None:
+        self.__search_city = city
 
-    def setId_city(self, id_city: str) -> None:
-        self.__id_city = id_city
-
-    def getId_city(self) -> str:
+    @property
+    def id_city(self) -> str:
         return self.__id_city
 
-    id_city = property(getId_city, setId_city)
+    @id_city.setter
+    def id_city(self, idcity: str) -> None:
+        self.__id_city = idcity
 
-    def setCheckIn(self, in_date: str) -> None:
-        self.__checkIn = in_date
-
-    def getCheckIn(self) -> str:
+    @property
+    def checkIn(self) -> str:
         return self.__checkIn
 
-    checkIn = property(getCheckIn, setCheckIn)
+    @checkIn.setter
+    def checkIn(self, in_date: str) -> None:
+        self.__checkIn = in_date
 
-    def setCheckOut(self, out_date: str) -> None:
-        self.__checkOut = out_date
-
-    def getCheckOut(self) -> str:
+    @property
+    def checkOut(self) -> str:
         return self.__checkOut
 
-    checkOut = property(getCheckOut, setCheckOut)
+    @checkOut.setter
+    def checkOut(self, out_date: str) -> None:
+        self.__checkOut = out_date
 
-    def setCount_show_hotels(self, count: int) -> None:
-        self.__count_show_hotels = count
-
-    def getCount_show_hotels(self) -> int:
+    @property
+    def count_show_hotels(self) -> int:
         return self.__count_show_hotels
 
-    count_show_hotels = property(getCount_show_hotels, setCount_show_hotels)
+    @count_show_hotels.setter
+    def count_show_hotels(self, count: int) -> None:
+        self.__count_show_hotels = count
 
-    def setCount_show_photo(self, count: int) -> None:
-        self.__count_show_photo = count
-
-    def getCount_show_photo(self) -> int:
+    @property
+    def count_show_photo(self) -> int:
         return self.__count_show_photo
 
-    count_show_photo = property(getCount_show_photo, setCount_show_photo)
+    @count_show_photo.setter
+    def count_show_photo(self, count: int) -> None:
+        self.__count_show_photo = count
 
-    def setDistance_min_max(self, distance: str) -> None:
-        self.__distance_min_max["min_dist"] = distance.split()[0]
-        self.__distance_min_max["max_dist"] = distance.split()[1]
+    @property
+    def distance_max(self) -> float:
+        return self.__distance_max
 
-    def getDistance_min_max(self) -> dict:
-        return self.__distance_min_max
+    @distance_max.setter
+    def distance_max(self, distance: float) -> None:
+        self.__distance_max = distance
 
-    distance_min_max = property(getDistance_min_max, setDistance_min_max)
+    @property
+    def price_min_max(self) -> dict:
+        return self.__price_min_max
 
-    def setPrice_min_max(self, pr_min_max: str) -> None:
+    @price_min_max.setter
+    def price_min_max(self, pr_min_max: str) -> None:
         self.__price_min_max["price_min"] = pr_min_max.split()[0]
         self.__price_min_max["price_max"] = pr_min_max.split()[1]
 
-    def getPrice_min_max(self) -> dict:
-        return self.__price_min_max
-
-    price_min_max = property(getPrice_min_max, setPrice_min_max)
-
-    def setCommand(self, cmnd: str) -> None:
-        self.__command = cmnd
-
-    def getCommand(self) -> str:
+    @property
+    def command(self) -> str:
         return self.__command
 
-    command = property(getCommand, setCommand)
+    @command.setter
+    def command(self, cmnd: str) -> None:
+        self.__command = cmnd
 
-    def setLanguage(self, hist: str) -> None:
-        self.__language = hist
+    @property
+    def message_id(self) -> str:
+        return self.__message_id
 
-    def getLanguage(self) -> str:
+    @message_id.setter
+    def message_id(self, mesid: str) -> None:
+        print(11, self.__message_id)
+        self.__message_id = mesid
+
+    @property
+    def language(self) -> str:
         return self.__language
 
-    language = property(getLanguage, setLanguage)
+    @language.setter
+    def language(self, lng: str) -> None:
+        self.__language = lng
+        self.__my_commands = [types.BotCommand("start", commands_bot[lng]["start"]),
+                              types.BotCommand("lowprice", commands_bot[lng]["lowprice"]),
+                              types.BotCommand("highprice", commands_bot[lng]["highprice"]),
+                              types.BotCommand("bestdeal", commands_bot[lng]["bestdeal"]),
+                              types.BotCommand("history", commands_bot[lng]["history"]),
+                              types.BotCommand("help", commands_bot[lng]["help"]),
+                              types.BotCommand("cancel", commands_bot[lng]["cancel"])]
+        self.__get_photo_yes_no: types.InlineKeyboardMarkup = PhotoYesNo(lng).get_photo_yes_no()
+        self.__get_kbd_photo_numb: types.InlineKeyboardMarkup = PhotoNumbKbd().get_kbd_photo_numb()
 
-    def setCurrency(self, curr: str) -> None:
-        self.__currency = curr
 
-    def getCurrency(self) -> str:
+
+    @property
+    def currency(self) -> str:
         return self.__currency
 
-    currency = property(getCurrency, setCurrency)
+    @currency.setter
+    def currency(self, curr: str) -> None:
+        self.__currency = curr
 
-    def setMes_id_hotel(self, mid: int) -> None:
-        self.__mes_id_hotel = mid
-
-    def getMes_id_hotel(self) -> int:
-        return self.__mes_id_hotel
-
-    message_id_hotel = property(getMes_id_hotel, setMes_id_hotel)
-
-    def setMes_id_photo(self, pid: int) -> None:
-        self.__mes_id_photo = pid
-
-    def getMes_id_photo(self) -> int:
-        return self.__mes_id_photo
-
-    message_id_photo = property(getMes_id_photo, setMes_id_photo)
-
-    def getInln_menu(self) -> types.InlineKeyboardMarkup:
-        return self._inln_menu
-
-    def setInln_menu(self, markup) -> None:
-        self._inln_menu = markup
-
-    inln_menu = property(getInln_menu, setInln_menu)
-
-    def getAllhotels(self) -> dict:
+    @property
+    def all_hotels(self) -> dict:
         return self.__all_hotels
 
-    def setAllhotels(self, hotel_dict: dict) -> None:
+    @all_hotels.setter
+    def all_hotels(self, hotel_dict: dict) -> None:
         self.__all_hotels = hotel_dict
 
-    all_hotels = property(getAllhotels, setAllhotels)
+    @property
+    def status_show_photo(self) -> bool:
+        return self.__status_show_photo
+
+    @status_show_photo.setter
+    def status_show_photo(self, status: bool):
+        self.__status_show_photo = status
+
+
+    @property
+    def my_commands(self) -> list:
+        return self.__my_commands
+
+    def getInl_lang(self):
+        return self._inl_lang
+
 
     def getHotel_kbd(self) -> types.InlineKeyboardMarkup:
         return self._get_hotel_kbd
@@ -185,96 +179,13 @@ class Users:
     def getKbd_photo_numb(self) -> types.InlineKeyboardMarkup:
         return self.__get_kbd_photo_numb
 
-    def getShow_kbd(self) -> types.InlineKeyboardMarkup:
-        return self.__get_show_kbd
+    @property
+    def state(self) -> int:
+        return self.__state
 
-    def getShowNoPhoto_kbd(self) -> types.InlineKeyboardMarkup:
-        return self.__get_show_no_photo_kbd
-
-
-    def getHotel_forward_triger(self):
-        return self.__hotel_forward_triger
-
-    def getHotel_backward_triger(self):
-        return self.__hotel_backward_triger
-
-
-    def getPhoto_backward_triger(self):
-        return self.__photo_backward_triger
-
-    def getPhoto_forward_triger(self):
-        return self.__photo_forward_triger
-
-
-    def hotel_forward(self) -> str:
-        """
-        Функция возвращает отель по индексу
-
-        """
-        lst_hotels = list(self.__all_hotels)
-
-        self.__start_index_photo = -1
-        if self.__start_index_hotel < len(lst_hotels) - 1:
-            self.__start_index_hotel += 1
-        if self.__start_index_hotel == len(lst_hotels) - 1:
-            self.__hotel_forward_triger = False
-            self.__hotel_backward_triger = True
-        hotel = lst_hotels[self.__start_index_hotel]
-        self.__photo_list = self.__all_hotels[hotel]
-        #print('Вперед:', self.__start_index_hotel)
-        return hotel
-
-
-    def hotel_backward(self) -> str:
-        """
-        Функция возвращает отель по индексу
-
-        """
-        lst_hotels = list(self.__all_hotels)
-
-        self.__start_index_photo = -1
-        if 0 < self.__start_index_hotel <= len(lst_hotels) - 1:
-            self.__start_index_hotel -= 1
-        if self.__start_index_hotel == 0:
-            self.__hotel_backward_triger = False
-            self.__hotel_forward_triger = True
-        hotel = lst_hotels[self.__start_index_hotel]
-        self.__photo_list = self.__all_hotels[hotel]
-        #print('Назад:', self.__start_index_hotel)
-
-        return hotel
-
-    def photo_forward(self) -> str:
-        """
-        Функция возвращает следующее фото отеля по индексу
-
-        """
-        photo = ''
-        if len(self.__photo_list) > 0:
-            if self.__start_index_photo < len(self.__photo_list) - 1:
-                self.__start_index_photo += 1
-            if self.__start_index_photo == len(self.__photo_list) - 1:
-                self.__photo_forward_triger = False
-                self.__photo_backward_triger = True
-            photo = self.__photo_list[self.__start_index_photo]
-            print('Вперед:', self.__start_index_photo)
-            return photo
-        return photo
-
-    def photo_backward(self) -> str:
-        """
-        Функция возвращает предыдущее фото отеля по индексу
-
-        """
-
-        if 0 < self.__start_index_photo <= len(self.__photo_list) - 1:
-            self.__start_index_photo -= 1
-
-        if self.__start_index_photo == 0:
-            self.__photo_backward_triger = False
-            self.__photo_forward_triger = True
-        print('Назад:', self.__start_index_photo)
-        return self.__photo_list[self.__start_index_photo]
+    @state.setter
+    def state(self, numb: int) -> None:
+        self.__state = numb
 
     def diff_date(self) -> int:
         """
@@ -290,26 +201,17 @@ class Users:
 
         return diff_date
 
-    def getStatus_show_photo(self) -> bool:
-        return self.__status_show_photo
-
-    def setStatus_show_photo(self, status:bool):
-        self.__status_show_photo = status
-
-    status_show_photo = property(getStatus_show_photo, setStatus_show_photo)
-
     def getSource_dict(self):
         """Функция возвращает исходные данные для формирования запроса к API"""
 
-        return {'id_user': self.__id_user, 'search_city':self.__search_city, 'id_city': self.__id_city,
+        return {'id_user': self.__id_user, 'search_city': self.__search_city, 'id_city': self.__id_city,
                 'checkIn': self.__checkIn, 'checkOut': self.__checkOut,
                 'command': self.__command, 'count_show_hotels': self.__count_show_hotels,
                 'count_show_photo': self.__count_show_photo,
                 'status_show_photo': self.__status_show_photo,
                 'price_min': self.__price_min_max.get('min'),
                 'price_max': self.__price_min_max.get('max'),
-                'distance_min': self.__distance_min_max.get('min'),
-                'distance_max': self.__distance_min_max.get('max'),
+                'distance_max': self.__distance_max,
                 'language': self.__language, 'currency': self.__currency,
                 'diff_date': self.diff_date()}
 
@@ -325,19 +227,11 @@ class Users:
         self.__count_show_photo: int = 0
         self.__status_show_photo: bool = False
         self.__price_min_max: dict = dict()
-        self.__distance_min_max: dict = dict()
-        self.__language: str = ''
+        self.__distance_max: float = 0.0
         self.__currency: str = ''
-        self.__mes_id_hotel: int = 0
-        self.__mes_id_photo: int = 0
         self.__all_hotels: dict = dict()
-        self.__start_index_hotel: int = -1
-        self.__start_index_photo: int = -1
-        self.__hotel_forward_triger: bool = True
-        self.__hotel_backward_triger: bool = False
-        self.__photo_backward_triger: bool = False
-        self.__photo_forward_triger: bool = True
-        self.__photo_list: list = []
+        self.__message_id: str = ''
+        self.__state: int = 0
 
     def insert_db(self):
         """Функция вставки данных (ID пользователя, имени, команды,
@@ -349,7 +243,7 @@ class Users:
         for item in list(self.__all_hotels.keys()):
             txt += item
         database.sql_insert(con, (self.__id_user, self.__username, self.__command,
-                                      str(datetime.datetime.now()), txt))
+                                  str(datetime.datetime.now()), txt))
         con.close()
 
     def history(self) -> list:
@@ -361,9 +255,3 @@ class Users:
         rows = database.sql_fetch(con, self.__id_user)
         con.close()
         return rows
-
-
-
-
-
-
