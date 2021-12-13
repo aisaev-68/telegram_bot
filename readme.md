@@ -41,11 +41,12 @@
    2. Create a file *.env* in the downloaded directory
    3. Find Bot-Father in telegram. Register a new bot and copy his *token*
    4. Add this strings to the *.env* file and save it:
-
+        """
         TELEGRAM_API_TOKEN=*your token*
         URL="https://hotels4.p.rapidapi.com/locations/search"
         URL_LOW="https://hotels4.p.rapidapi.com/properties/list"
         URL_PHOTOS="https://hotels4.p.rapidapi.com/properties/get-hotel-photos"
+        """
 
 ### Create and activate a virtual environment:
 
