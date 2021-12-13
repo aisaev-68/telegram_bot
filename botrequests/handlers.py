@@ -178,9 +178,11 @@ def inline(call):
     if call.data in ['yes_photo', 'no_photo']:
         user[call.message.chat.id].status_show_photo = (True if call.data == 'yes_photo' else False)
         if user[call.message.chat.id].status_show_photo:
+            bot.answer_callback_query(callback_query_id=call.id)
             ask_count_photo(call.message)
         else:
             bot.send_message(call.message.chat.id, loctxt[user[call.message.chat.id].language][0])
+            bot.answer_callback_query(callback_query_id=call.id)
             step_show_info(call.message)
 
     elif call.data.startswith('cbcal_1'):
@@ -230,6 +232,7 @@ def inline(call):
         user[call.message.chat.id].id_city = call.data[5:]
         user[call.message.chat.id].message_id = call.message.message_id
         ask_date(call.message, loctxt[user[call.message.chat.id].language][3])
+        bot.answer_callback_query(callback_query_id=call.id)
     elif call.data == 'Cancel_process':
         bot.edit_message_text(text=loctxt[user[call.message.chat.id].language][16], chat_id=call.message.chat.id,
                               message_id=user[call.message.chat.id].message_id)
