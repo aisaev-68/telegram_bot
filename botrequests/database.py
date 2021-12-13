@@ -2,7 +2,7 @@
 
 import sqlite3
 from sqlite3 import Error
-import logging
+from handlers import logging
 from datetime import datetime
 
 

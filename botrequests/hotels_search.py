@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from requests_api import req_api, get_photos, config
+from requests_api import req_api, get_photos, config, logging, datetime
 from handlers import types
 import json
 
@@ -52,17 +52,20 @@ def hotel_query(querystring: dict, source_dict: dict, bot, mes: types.Message, u
 
                     photo_lst = [types.InputMediaPhoto(media=link) for index, link in enumerate(data_photo) if
                                  source_dict['count_show_photo'] > index]
+                    try:
+                        bot.send_media_group(chat_id=mes.chat.id, media=photo_lst)
+                    except Exception as er:
+                        logging.error(f"{datetime.now()} - {er} - Отправка фото")
 
                     user[mes.chat.id].all_hotels[txt] = photo_lst
                 else:
                     user[mes.chat.id].all_hotels[txt] = []
                 try:
-                    bot.send_media_group(chat_id=mes.chat.id, media=photo_lst)
                     bot.send_message(chat_id=mes.chat.id, text=txt,
                                      disable_web_page_preview=True,
                                      parse_mode="HTML")
                 except Exception as e:
-                    print(e)
+                    logging.error(f"{datetime.now()} - {e} - Отправка гостиниц")
         user[mes.chat.id].insert_db()
         bot.send_message(chat_id=mes.chat.id, text=loc_txt[loc][8].format(len(user[mes.chat.id].all_hotels)))
 
