@@ -30,12 +30,12 @@ def hotel_query(querystring: dict, source_dict: dict, bot, mes: types.Message, u
 
     links_htmls = ("https://ru.hotels.com/ho{}" if loc[:2] == "ru"
                    else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
-    # TypeError: 'NoneType' object is not subscriptable
+
     if low_data:
         for hotel_count, results in enumerate(low_data['data']['body']['searchResults']['results']):
             photo_lst = []
             txt = ''
-            summa = float(source_dict['diff_date']) * results["ratePlan"]["price"]["exactCurrent"]
+            summa = round(float(source_dict['diff_date']) * results["ratePlan"]["price"]["exactCurrent"], 2)
             if source_dict['count_show_hotels'] != hotel_count:
                 txt = f"<strong>⭐⭐⭐{loc_txt[loc][0]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐⭐⭐</strong>\n" \
                       f"🏨 {loc_txt[loc][1]} {results['name']}\n" \
@@ -55,7 +55,7 @@ def hotel_query(querystring: dict, source_dict: dict, bot, mes: types.Message, u
                     try:
                         bot.send_media_group(chat_id=mes.chat.id, media=photo_lst)
                     except Exception as er:
-                        logging.error(f"{datetime.now()} - {er} - Отправка фото")
+                        logging.error(f"{datetime.now()} - {er} - Модуль requests_api - Отправка фото")
 
                     user[mes.chat.id].all_hotels[txt] = photo_lst
                 else:
@@ -65,7 +65,7 @@ def hotel_query(querystring: dict, source_dict: dict, bot, mes: types.Message, u
                                      disable_web_page_preview=True,
                                      parse_mode="HTML")
                 except Exception as e:
-                    logging.error(f"{datetime.now()} - {e} - Отправка гостиниц")
+                    logging.error(f"{datetime.now()} - {e} - Модуль requests_api - Отправка гостиниц")
         user[mes.chat.id].insert_db()
         bot.send_message(chat_id=mes.chat.id, text=loc_txt[loc][8].format(len(user[mes.chat.id].all_hotels)))
 

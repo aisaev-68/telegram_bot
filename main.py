@@ -8,6 +8,7 @@ from botrequests.handlers import user, bot, ask_search_city, history
 l_text = {'ru_RU': ['В каком городе будем искать?', 'Будет выведена информация о двух последних запросах'],
           'en_US': ['What city are we looking for?', 'Information about the last two requests will be displayed']}
 
+
 @bot.message_handler(commands=["help", "start"])
 def help_start_message(message):
     if not user.get(message.from_user.id):
@@ -68,4 +69,4 @@ if __name__ == '__main__':
             logging.error(f"{datetime.now()} - Бот запущен")
             bot.polling(none_stop=True, interval=0)
         except Exception as ex:
-            logging.error(f"{datetime.now()} - {ex}")
+            logging.error(f"{datetime.now()} - {ex} - Модуль main")

@@ -123,7 +123,6 @@ class Users:
 
     @message_id.setter
     def message_id(self, mesid: str) -> None:
-        print(11, self.__message_id)
         self.__message_id = mesid
 
     @property

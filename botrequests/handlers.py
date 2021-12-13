@@ -92,7 +92,7 @@ def ask_search_city(message):
     user[message.chat.id].currency = ('RUB' if user[message.chat.id].language == 'ru_RU' else 'USD')
     bot.set_my_commands(user[message.chat.id].my_commands)
     msg = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
-    user[message.chat.id].message_id = msg.message_id
+    user[message.from_user.id].message_id = msg.message_id
     if not get_city_id(user, message, bot):
         command = user[message.chat.id].command
         user[message.chat.id].clearCache()
@@ -180,6 +180,7 @@ def inline(call):
         if user[call.message.chat.id].status_show_photo:
             ask_count_photo(call.message)
         else:
+            bot.send_message(call.message.chat.id, loctxt[user[call.message.chat.id].language][0])
             step_show_info(call.message)
 
     elif call.data.startswith('cbcal_1'):

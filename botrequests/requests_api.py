@@ -36,19 +36,19 @@ def req_api(url: str, querystring: dict, lng="en_US") -> Any:
             return data
         else:
             if json.loads(response.text).get("message"):
-                logging.error(f"{datetime.now()} - Превышена ежемесячная квота для запросов по плану BASIC.")
+                logging.error(f"{datetime.now()} - Модуль requests_api - Превышена ежемесячная квота для запросов по плану BASIC.")
                 return json.loads(response.text)
             else:
-                logging.error(f"{datetime.now()} - Что-то пошло не так. Повторите позже.")
+                logging.error(f"{datetime.now()} - Модуль requests_api - Что-то пошло не так. Повторите позже.")
                 return server_error[lng]["erhttp"]
     except ConnectionError as ercon:
-        logging.error(f"{datetime.now()} - {ercon} - Нет, соединения с сервисом.")
+        logging.error(f"{datetime.now()} - {ercon} - Модуль requests_api - Нет, соединения с сервисом.")
         return server_error[lng]["ercon"]
     except TimeoutError as ertime:
-        logging.error(f"{datetime.now()} - {ertime} -Время ожидания запроса истекло")
+        logging.error(f"{datetime.now()} - {ertime} - Модуль requests_api - Время ожидания запроса истекло")
         return server_error[lng]["ertime"]
     except json.decoder.JSONDecodeError as erjson:
-        logging.error(f"{datetime.now()} - {erjson} - Получен некорректный ответ от сервиса.")
+        logging.error(f"{datetime.now()} - {erjson} - Модуль requests_api - Получен некорректный ответ от сервиса.")
         return server_error[lng]["erjson"]
 
 
