@@ -1,28 +1,58 @@
 # -*- coding: utf-8 -*-
-import time
 
 from decouple import config
 import logging
-from requests import get
 import re
-from locales import loctxt, info_help
-from telebot import types
-from telebot.async_telebot import AsyncTeleBot
-from requests_api import get_city_id, query_string, hotel_query
+from telebot import TeleBot, types
+from requests_api import query_string
+from search_city_id import get_city_id
+from hotels_search import hotel_query
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
 
-bot = AsyncTeleBot(config('TELEGRAM_API_TOKEN'))
+bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
 logging.basicConfig(filename="logger.log", level=logging.INFO)
 
 user = {}
 
+info_help = {'ru_RU':
+                 'Привет , я БОТ по поиску отелей. Подобрать для Вас отель? 🏨✅\n'
+                 '● /help — помощь по командам бота\n● /lowprice — вывод самых дешёвых отелей в городе\n'
+                 '● /highprice — вывод самых дорогих отелей в городе\n'
+                 '● /bestdeal — вывод отелей, наиболее подходящих по цене и расположению от центра\n'
+                 '● /history - вывод истории поиска отелей',
+             'en_US':
+                 "Hi, I'm a hotel search BOT. Find a hotel for you? 🏨✅\n"
+                 '● /help — help with bot commands\n● /lowprice — listing of the cheapest hotels in the city\n'
+                 '● /highprice — conclusion of the most expensive hotels in the city\n'
+                 '● /bestdeal — conclusion of hotels that are most suitable in terms of price and location '
+                 'from the center\n'
+                 '● /history - hotel search history display'
+             }
 
-class MyStates:
-    ask_search_city = 1
-    ask_specify_city = 2
-    ask_history = 3
 
+loctxt = {'ru_RU':
+              ['Ищем...', 'Такой город не найден. Повторите поиск.', 'В каком городе будем искать?',
+               'Выберите дату *заезда*:', 'Выберите дату *выезда*:',
+               'Укажите количество отелей, которые необходимо вывести (не более 25).',
+               'Показать фотографии отелей?', 'Выберите количество фото для загрузки:',
+               'Дата заезда выбрана.', 'Дата выезда выбрана.',
+               'Дата выезда должна быть больше даты въезда.Повторите ввод.', 'История запросов:\n',
+               'Ваша история пуста.',
+               'Команда:', 'Дата запросов:', 'Команда выполнена.', 'Вы отменили данную операцию'
+               ],
+          'en_US':
+              ['Are looking for...', 'No such city has been found. Repeat the search.',
+               ' In which city are we looking?',
+               'Select *check-in date*:', 'Select *check-out date*:',
+               'Specify the number of hotels to be displayed (no more than 25).',
+               'Show photos of hotels?', 'Select the number of photos to upload:',
+               ' Check-in date selected. ', ' Check-out date selected.',
+               'The check-out date must be greater than the check-in date. Please re-enter.',
+               'Request history:\n', 'Your story is empty.', 'Command:', 'Date of requests:',
+               'Command completed.', 'You canceled this operation'
+               ]
+          }
 
 
 class MyStyleCalendar(WYearTelegramCalendar):
@@ -31,7 +61,7 @@ class MyStyleCalendar(WYearTelegramCalendar):
     next_button = "➡️"
 
 
-async def check_city(mess):
+def check_city(mess):
     """
         Функция проверки на корректность ввода названия города. re.findall(r'^[а-яА-ЯёЁa-zA-Z-\s]+$', txt)
     """
@@ -39,248 +69,170 @@ async def check_city(mess):
         # err_city = bot.send_message(mess.chat.id,
         #                             'Город должен содержать только буквы, пробел и дефис, вводи еще раз город.')
         # user[mess.chat.id].message_id = err_city.message_id
-        m = await bot.send_message(chat_id=mess.from_user.id,
-                                   text=loctxt[user[mess.chat.id].language][3])
+        m = bot.send_message(chat_id=mess.from_user.id,
+                             text=loctxt[user[mess.chat.id].language][3])
         user[mess.chat.id].message_id = m.message_id
         # bot.register_next_step_handler(m, next_step_city)
         # await next_step_city(m)
     else:
         return True
 
-@bot.message_handler(state="*", commands='cancel')
-async def any_state(message):
-    """
-    Cancel state
-    """
-    await bot.send_message(message.chat.id, "Команда отменена")
-    await bot.delete_state(message.from_user.id)
 
-@bot.message_handler(state=MyStates.ask_search_city)
-async def ask_search_city(message):
+def ask_search_city(message):
     """
-    State 2. Will process when user's state is 2.
+    Функция готовит данные для запроса городов и вызывает функцию get_city_id()
+    для вывода в чат городов
+    :param message: сообщение
     """
 
     user[message.from_user.id].message_id = message.message_id
-    # await bot.set_state(message.from_user.id, MyStates.ask_specify_city)
-    async with bot.retrieve_data(message.from_user.id) as user[message.chat.id].search_city:
-        user[message.chat.id].search_city = message.text.lower()
+    user[message.chat.id].search_city = message.text.lower()
     user[message.chat.id].language = (
         "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
     user[message.chat.id].currency = ('RUB' if user[message.chat.id].language == 'ru_RU' else 'USD')
-    await bot.set_my_commands(user[message.chat.id].my_commands)
-    msg = await bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
+    bot.set_my_commands(user[message.chat.id].my_commands)
+    msg = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
     user[message.chat.id].message_id = msg.message_id
-    await bot.delete_state(message.chat.id)
-    await ask_specify_city(message)
+    if not get_city_id(user, message, bot):
+        command = user[message.chat.id].command
+        user[message.chat.id].clearCache()
+        user[message.chat.id].command = command
+        bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][1])
+        m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
+        bot.register_next_step_handler(m, ask_search_city)
 
 
-async def ask_specify_city(message):
-    lng = user[message.from_user.id].language
-    city_list = get_city_id(user[message.chat.id].search_city, lng)
-    print(city_list)
-    print(type(city_list))
-    if isinstance(city_list, list):
-        if len(city_list) > 1:
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            for i in city_list:
-                button = types.InlineKeyboardButton(i['city_name'], callback_data='cbid_' + str(i["destinationID"]))
-                markup.add(button)
-            await bot.edit_message_text(text=loctxt[lng][21], chat_id=message.chat.id,
-                                        message_id=user[message.chat.id].message_id,
-                                        parse_mode='html', reply_markup=markup)
-
-
-        elif len(city_list) == 1:
-            user[message.from_user.id].id_city = city_list[0]['destinationID']
-            await ask_date(message, 'Введите дату заезда')
-        else:
-            command = user[message.chat.id].command
-            user[message.chat.id].clearCache()
-            user[message.chat.id].command = command
-            await bot.send_message(message.chat.id, loctxt[lng][2])
-            await bot.set_state(message.from_user.id, MyStates.ask_search_city)
-            await bot.send_message(message.chat.id, loctxt[lng][3])
-    else:
-        await bot.send_message(message.chat.id, city_list)
-
-
-async def ask_date(message, txt):
+def ask_date(message, txt):
     lng = user[message.chat.id].language
-    await bot.edit_message_text(text=txt, chat_id=message.chat.id,
-                                message_id=user[message.chat.id].message_id,
-                                parse_mode='MARKDOWN',
-                                reply_markup=MyStyleCalendar(calendar_id=1,
-                                                             locale=lng[:2]).build()[0])
+    bot.edit_message_text(text=txt, chat_id=message.chat.id,
+                          message_id=user[message.chat.id].message_id,
+                          parse_mode='MARKDOWN',
+                          reply_markup=MyStyleCalendar(calendar_id=1,
+                                                       locale=lng[:2]).build()[0])
 
 
-async def ask_count_hotels(message):
+def ask_count_hotels(message):
     """Функция предлагает указать количество отелей, которые необходимо вывести
     :param message: входящее сообщение от пользователя
     """
-    lng = user[message.chat.id].language
-    await bot.edit_message_text(text=loctxt[lng][5],
-                                chat_id=message.chat.id,
-                                message_id=user[message.chat.id].message_id,
-                                reply_markup=user[message.chat.id].getHotel_kbd())
+    bot.edit_message_text(text=loctxt[user[message.chat.id].language][5],
+                          chat_id=message.chat.id,
+                          message_id=user[message.chat.id].message_id,
+                          reply_markup=user[message.chat.id].getHotel_kbd())
 
 
-async def ask_show_photo(message):
+def ask_show_photo(message):
     """Функция предлагает показ фотографии отелей
     :param message: входящее сообщение от пользователя
     """
-    lng = user[message.chat.id].language
-    await bot.edit_message_text(text=loctxt[lng][6], chat_id=message.chat.id,
-                                message_id=user[message.chat.id].message_id,
-                                reply_markup=user[message.chat.id].getPhoto_yes_no())
+    bot.edit_message_text(text=loctxt[user[message.chat.id].language][6], chat_id=message.chat.id,
+                          message_id=user[message.chat.id].message_id,
+                          reply_markup=user[message.chat.id].getPhoto_yes_no())
 
 
-async def ask_count_photo(message):
+def ask_count_photo(message):
     """
     Функция прелагает выбрать количество фото для загрузки
     :param mess: объект входящего сообщения от пользователя
     """
-    lng = user[message.chat.id].language
-    await bot.edit_message_text(text=loctxt[lng][7], chat_id=message.chat.id,
-                                message_id=user[message.chat.id].message_id,
-                                reply_markup=user[message.chat.id].getKbd_photo_numb())
+    bot.edit_message_text(text=loctxt[user[message.chat.id].language][7], chat_id=message.chat.id,
+                          message_id=user[message.chat.id].message_id,
+                          reply_markup=user[message.chat.id].getKbd_photo_numb())
 
 
-
-async def step_show_info(message):
+def step_show_info(message):
     """
     Функция для вывода информации в чат
     :param mess: объект входящего сообщения от пользователя
     """
-    await bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
+    bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
     querystring = query_string(user[message.chat.id].command, user[message.chat.id].getSource_dict())
-    user[message.chat.id].all_hotels = hotel_query(querystring, user[message.chat.id].getSource_dict())
-    count_hotel = len(user[message.chat.id].all_hotels)
-    if isinstance(user[message.chat.id].all_hotels, dict):
-        user[message.chat.id].insert_db()
-        if count_hotel > 0:
-            for hotel, photo_list in user[message.chat.id].all_hotels.items():
-                media_list = []
-                if len(photo_list) > 1:
-                    first_photo = photo_list[0]
-                    media_list = [types.InputMediaPhoto(media=first_photo, caption=hotel, parse_mode="Markdown")]
-                    for ind in range(1, len(photo_list)):
-                        time.sleep(1)
-                        media_list.append(types.InputMediaPhoto(photo_list[ind]))
-                    await bot.send_media_group(chat_id=message.chat.id,
-                                               media=media_list)
-                elif len(photo_list) == 1:
-                    await bot.send_media_group(chat_id=message.chat.id,
-                                               media=[types.InputMediaPhoto(photo_list[0], caption=hotel,
-                                                                            parse_mode="Markdown")])
-                else:
-                    if user[message.chat.id].status_show_photo:
-                        img = open('botrequests/images/f5ed7098_z.jpg', 'rb')
-                        await bot.send_media_group(chat_id=message.chat.id,
-                                                   media=[types.InputMediaPhoto(media=img,
-                                                                                caption=hotel, parse_mode="Markdown")])
-                        img.close()
-                    else:
-                        img = open('botrequests/images/1e007e4f_z', 'rb')
-                        await bot.send_media_group(chat_id=message.chat.id,
-                                                   media=[types.InputMediaPhoto(media=img,
-                                                                                caption=hotel, parse_mode="Markdown")])
-                        img.close()
-
-        else:
-            lng = user[message.chat.id].language
-            command = user[message.chat.id].command
-            user[message.chat.id].clearCache()
-            user[message.chat.id].command = command
-            await bot.send_message(message.chat.id, user[message.chat.id].all_hotels)
-            await bot.send_message(message.chat.id, loctxt[lng][3])
-            await bot.set_state(message.from_user.id, MyStates.ask_search_city)
-
-        await bot.send_message(chat_id=message.chat.id,
-                               text=loctxt[user[message.chat.id].language][22].format(count_hotel))
-        user[message.from_user.id].clearCache()
-
-    else:
-        await bot.send_message(chat_id=message.chat.id, text=user[message.from_user.id].all_hotels)
-        user[message.from_user.id].message_id = message.message_id
+    user[message.chat.id].all_hotels = hotel_query(querystring, user[message.chat.id].getSource_dict(),
+                                                   bot, message, user)
 
 
-async def history(message):
-    lng = (message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
-        message.chat.id].language)
-    await bot.set_my_commands(user[message.chat.id].my_commands)
+def history(message):
+    if user[message.chat.id].language == '':
+        user[message.chat.id].language = (
+            message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
+                message.chat.id].language)
+    bot.set_my_commands(user[message.chat.id].my_commands)
     history = user[message.chat.id].history()
-    txt = loctxt[lng][16]
+    txt = loctxt[user[message.chat.id].language][11]
     if len(history) == 0:
-        txt += loctxt[lng][17]
-        await bot.send_message(chat_id=message.chat.id, text=txt)
+        txt += loctxt[user[message.chat.id].language][12]
+        bot.send_message(chat_id=message.chat.id, text=txt)
     else:
-        for item in history:
-            txt += f'{loctxt[lng][18]} {item[0]}\n{loctxt[lng][19]} {item[1]}\n{item[2]}\n'
-            await bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True)
+        for elem in history:
+            txt += f'{loctxt[user[message.chat.id].language][13]} {elem[0]}\n' \
+                   f'{loctxt[user[message.chat.id].language][14]} {elem[1]}\n{elem[2]}\n'
+            bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
             txt = ''
-    await bot.send_message(chat_id=message.chat.id, text='Команда выполнена')
+
+    bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][15])
 
 
 @bot.callback_query_handler(func=lambda call: True)
-async def inline(call):
-    lng = user[call.message.chat.id].language
-    if call.data in ['/help']:
-        m = await bot.send_message(text=info_help[lng], chat_id=call.message.from_user.id)
-        user[call.message.chat.id].message_id = m.message_id
+def inline(call):
 
-    elif call.data in ['yes_photo', 'no_photo']:
+    if call.data in ['yes_photo', 'no_photo']:
         user[call.message.chat.id].status_show_photo = (True if call.data == 'yes_photo' else False)
         if user[call.message.chat.id].status_show_photo:
-            await ask_count_photo(call.message)
+            ask_count_photo(call.message)
         else:
-            await step_show_info(call.message)
+            step_show_info(call.message)
 
     elif call.data.startswith('cbcal_1'):
         result, key, step = MyStyleCalendar(calendar_id=1).process(call.data)
         if not result:
-            await bot.edit_message_reply_markup(chat_id=call.message.chat.id,
-                                                message_id=user[call.message.chat.id].message_id,
-                                                reply_markup=key)
+            bot.edit_message_reply_markup(chat_id=call.message.chat.id,
+                                          message_id=user[call.message.chat.id].message_id,
+                                          reply_markup=key)
         elif result:
             if not user[call.message.chat.id].checkIn:
                 user[call.message.chat.id].checkIn = result.strftime('%Y-%m-%d')
-                await bot.answer_callback_query(callback_query_id=call.id,
-                                                text=loctxt[lng][9])
-                await ask_date(call.message, 'Введите дату выезда')
+                bot.answer_callback_query(callback_query_id=call.id,
+                                          text=loctxt[user[call.message.chat.id].language][8])
+                ask_date(call.message, loctxt[user[call.message.chat.id].language][4])
 
             else:
                 user[call.message.chat.id].checkOut = result.strftime('%Y-%m-%d')
                 if user[call.message.chat.id].checkOut > user[call.message.chat.id].checkIn:
-                    await ask_count_hotels(call.message)
-                    await bot.answer_callback_query(callback_query_id=call.id,
-                                                    text=loctxt[lng][10])
+                    ask_count_hotels(call.message)
+                    bot.answer_callback_query(callback_query_id=call.id,
+                                              text=loctxt[user[call.message.chat.id].language][9])
                 else:
-                    await ask_date(call.message, 'Введите дату выезда')
+                    ask_date(call.message, loctxt[user[call.message.chat.id].language][10])
 
     elif call.data in ["five", "ten", "fifteen", "twenty", "twenty_five"]:
         numbers_hotel = {"five": 5, "ten": 10, "fifteen": 15, "twenty": 20, "twenty_five": 25}
         user[call.message.chat.id].count_show_hotels = numbers_hotel[call.data]
-        await bot.answer_callback_query(callback_query_id=call.id)
-        await ask_show_photo(call.message)
+        bot.answer_callback_query(callback_query_id=call.id)
+        ask_show_photo(call.message)
 
     elif call.data in ["one_photo", "two_photo", "three_photo", "four_photo", "five_photo"]:
         numbers_photo = {"one_photo": 1, "two_photo": 2, "three_photo": 3, "four_photo": 4, "five_photo": 5}
         user[call.message.chat.id].count_show_photo = numbers_photo[call.data]
-        await bot.answer_callback_query(callback_query_id=call.id)
-        await step_show_info(call.message)
+        bot.answer_callback_query(callback_query_id=call.id)
+        step_show_info(call.message)
 
     elif call.data in ['ru_RU', 'en_US']:
         user[call.message.chat.id].language = call.data
-        await bot.set_my_commands(user[call.message.chat.id].my_commands)
+        bot.set_my_commands(user[call.message.chat.id].my_commands)
         user[call.message.chat.id].message_id = call.message.message_id
-        await bot.delete_message(chat_id=call.message.chat.id, message_id=user[call.message.chat.id].message_id)
-        await bot.answer_callback_query(callback_query_id=call.id)
+        bot.delete_message(chat_id=call.message.chat.id, message_id=user[call.message.chat.id].message_id)
+        bot.answer_callback_query(callback_query_id=call.id)
+        if user[call.message.chat.id].command in ['start', 'help']:
+            bot.send_message(text=info_help[user[call.message.chat.id].language], chat_id=call.message.from_user.id)
 
     elif call.data.startswith('cbid_'):
         user[call.message.chat.id].id_city = call.data[5:]
         user[call.message.chat.id].message_id = call.message.message_id
-        await ask_date(call.message, 'Введите дату заезда')
+        ask_date(call.message, loctxt[user[call.message.chat.id].language][3])
+    elif call.data == 'Cancel_process':
+        bot.edit_message_text(text=loctxt[user[call.message.chat.id].language][16], chat_id=call.message.chat.id,
+                              message_id=user[call.message.chat.id].message_id)
+        bot.answer_callback_query(callback_query_id=call.id)
 
     else:
-        await bot.answer_callback_query(callback_query_id=call.id)
+        bot.answer_callback_query(callback_query_id=call.id)

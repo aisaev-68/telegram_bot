@@ -3,7 +3,16 @@
 import datetime
 import database
 from keyboards import PhotoYesNo, HotelKbd, PhotoNumbKbd, Lang, types
-from locales import commands_bot
+
+commands_bot = {
+    "ru_RU": {
+        "lowprice": "Поиск дешевых отелей",
+        "highprice": "Поиск отелей класса люкс", "bestdeal": "Поиск лучших отелей",
+        "history": "Показать историю запросов", "help": "Помощь"},
+    "en_US": {
+        "lowprice": "Search for cheap hotels",
+        "highprice": "Search for luxury hotels", "bestdeal": "Search for the best hotels",
+        "history": "Show request history", "help": "Help", }}
 
 
 class Users:
@@ -34,7 +43,6 @@ class Users:
         self.__all_hotels: dict = dict()
         self.__message_id: str = ''
         self.__my_commands: list = []
-        self.__state: int = 0
 
     @property
     def search_city(self) -> str:
@@ -125,17 +133,13 @@ class Users:
     @language.setter
     def language(self, lng: str) -> None:
         self.__language = lng
-        self.__my_commands = [types.BotCommand("start", commands_bot[lng]["start"]),
-                              types.BotCommand("lowprice", commands_bot[lng]["lowprice"]),
+        self.__my_commands = [types.BotCommand("lowprice", commands_bot[lng]["lowprice"]),
                               types.BotCommand("highprice", commands_bot[lng]["highprice"]),
                               types.BotCommand("bestdeal", commands_bot[lng]["bestdeal"]),
                               types.BotCommand("history", commands_bot[lng]["history"]),
-                              types.BotCommand("help", commands_bot[lng]["help"]),
-                              types.BotCommand("cancel", commands_bot[lng]["cancel"])]
+                              types.BotCommand("help", commands_bot[lng]["help"])]
         self.__get_photo_yes_no: types.InlineKeyboardMarkup = PhotoYesNo(lng).get_photo_yes_no()
         self.__get_kbd_photo_numb: types.InlineKeyboardMarkup = PhotoNumbKbd().get_kbd_photo_numb()
-
-
 
     @property
     def currency(self) -> str:
@@ -161,14 +165,12 @@ class Users:
     def status_show_photo(self, status: bool):
         self.__status_show_photo = status
 
-
     @property
     def my_commands(self) -> list:
         return self.__my_commands
 
     def getInl_lang(self):
         return self._inl_lang
-
 
     def getHotel_kbd(self) -> types.InlineKeyboardMarkup:
         return self._get_hotel_kbd
@@ -178,14 +180,6 @@ class Users:
 
     def getKbd_photo_numb(self) -> types.InlineKeyboardMarkup:
         return self.__get_kbd_photo_numb
-
-    @property
-    def state(self) -> int:
-        return self.__state
-
-    @state.setter
-    def state(self, numb: int) -> None:
-        self.__state = numb
 
     def diff_date(self) -> int:
         """
@@ -231,7 +225,6 @@ class Users:
         self.__currency: str = ''
         self.__all_hotels: dict = dict()
         self.__message_id: str = ''
-        self.__state: int = 0
 
     def insert_db(self):
         """Функция вставки данных (ID пользователя, имени, команды,

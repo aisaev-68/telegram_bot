@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from handlers import types
-from locales import hotel_kbd
+
+hotel_kbd = {'ru_RU': ['Да', 'Нет'], 'en_US': ['Yes', 'No']}
 
 
 class HotelKbd:
@@ -19,6 +20,7 @@ class HotelKbd:
     def get_hotel_kbd(self) -> types.InlineKeyboardMarkup:
         return self.__markup
 
+
 class Lang:
     """ Класс инлайн кнопок с вопросом будем ли искать фото?
     """
@@ -31,14 +33,15 @@ class Lang:
     def get_langkb(self) -> types.InlineKeyboardMarkup:
         return self.__markup
 
+
 class PhotoYesNo:
     """ Класс инлайн кнопок с вопросом будем ли искать фото?
     """
 
     def __init__(self, loc='ru_RU') -> None:
         self.__markup = types.InlineKeyboardMarkup()
-        self.__markup.add(types.InlineKeyboardButton(text='✅' + hotel_kbd[loc][5], callback_data='yes_photo'),
-                          types.InlineKeyboardButton(text='❌' + hotel_kbd[loc][6], callback_data='no_photo'))
+        self.__markup.add(types.InlineKeyboardButton(text='✅' + hotel_kbd[loc][0], callback_data='yes_photo'),
+                          types.InlineKeyboardButton(text='❌' + hotel_kbd[loc][1], callback_data='no_photo'))
 
     def get_photo_yes_no(self) -> types.InlineKeyboardMarkup:
         return self.__markup
@@ -58,5 +61,3 @@ class PhotoNumbKbd:
 
     def get_kbd_photo_numb(self) -> types.InlineKeyboardMarkup:
         return self.__markup
-
-
