@@ -3,10 +3,12 @@
 from user import Users
 import logging
 from datetime import datetime
-from botrequests.handlers import user, bot, ask_search_city, history
+from botrequests.handlers import user, bot, ask_search_city, history, info_help, re
 
-l_text = {'ru_RU': ['В каком городе будем искать?', 'Будет выведена информация о двух последних запросах'],
-          'en_US': ['What city are we looking for?', 'Information about the last two requests will be displayed']}
+l_text = {'ru_RU': ['В каком городе будем искать?', 'Будет выведена информация о двух последних запросах',
+                    'Извините, данная команда мне неизвестна.\n'],
+          'en_US': ['What city are we looking for?', 'Information about the last two requests will be displayed',
+                    'Sorry, this command is unknown to me.\n']}
 
 
 @bot.message_handler(commands=["help", "start"])
@@ -20,7 +22,7 @@ def help_start_message(message):
                      reply_markup=user[message.chat.id].getInl_lang())
 
 
-@bot.message_handler(commands=["lowprice"])
+@bot.message_handler(commands=["lowprice", "highprice"])
 def lowprice_message(message):
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
@@ -32,14 +34,6 @@ def lowprice_message(message):
                 message.chat.id].language)
     m = bot.send_message(message.chat.id, l_text[user[message.chat.id].language][0])
     bot.register_next_step_handler(m, ask_search_city)
-
-
-@bot.message_handler(commands=["highprice"])
-def highprice_message(message):
-    if not user.get(message.from_user.id):
-        user[message.from_user.id] = Users(message)
-    user[message.chat.id].clearCache()
-    pass
 
 
 @bot.message_handler(commands=["bestdeal"])
@@ -62,6 +56,14 @@ def history_message(message):
     bot.send_message(message.chat.id, l_text[user[message.chat.id].language][1])
     history(message)
 
+@bot.message_handler(content_types=['text'])
+def get_text_messages(message):
+    if not user.get(message.from_user.id):
+        user[message.from_user.id] = Users(message)
+    user[message.chat.id].language = (
+        "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
+    bot.send_message(text=l_text[user[message.chat.id].language][2] + info_help[user[message.chat.id].language],
+                     chat_id=message.from_user.id)
 
 if __name__ == '__main__':
     while True:

@@ -15,7 +15,6 @@
 ### Requirements:
 
     Python 3.9+
-    Sqllite3
 
 ### Libraries:
 

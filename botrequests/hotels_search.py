@@ -7,11 +7,11 @@ import json
 loc_txt = {'ru_RU':
                ['Рейтинг: ', 'Отель: ', 'Адрес: ', 'От центра города:', 'Дата заезда-выезда: ',
                 'Цена за сутки (в руб): ', 'Цена за {} сутки (в руб): ', 'Ссылка на страницу: ',
-                'Найдено {} отелей'],
+                'Найдено {} отелей', 'Нет данных об адресе.', 'Нет данных о расценках.'],
            'en_US':
                ['Rating: ', 'Hotel: ', 'Address: ', 'From the city center: ', 'Check-in (check-out) date: ',
                 'Price per day (USD): ', 'Price for {} day (USD): ', 'link to the page: ',
-                'Found {} hotels']
+                'Found {} hotels', 'No address data.', 'No price data.']
            }
 
 def hotel_query(querystring: dict, source_dict: dict, bot, mes: types.Message, user: dict):
@@ -40,11 +40,11 @@ def hotel_query(querystring: dict, source_dict: dict, bot, mes: types.Message, u
                 txt = f"<strong>⭐⭐⭐{loc_txt[loc][0]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐⭐⭐</strong>\n" \
                       f"🏨 {loc_txt[loc][1]} {results['name']}\n" \
                       f"       {loc_txt[loc][2]} {results['address'].get('countryName')}, {results['address'].get('locality')}, " \
-                      f"{(results['address'].get('streetAddress') if results['address'].get('streetAddress') else 'Нет данных об адресе...')}\n" \
+                      f"{(results['address'].get('streetAddress') if results['address'].get('streetAddress') else loc_txt[loc][10])}\n" \
                       f"🚗 {loc_txt[loc][3]} {results['landmarks'][0]['distance']}\n" \
                       f"📅 {loc_txt[loc][4]} {source_dict['checkIn']} - {source_dict['checkOut']}\n" \
-                      f"💵 {loc_txt[loc][5]} <b>{(results['ratePlan']['price']['exactCurrent']) if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}</b>\n" \
-                      f"💵 {loc_txt[loc][6].format(source_dict['diff_date'])} <b>{summa if results['ratePlan']['price']['exactCurrent'] else 'Нет данных о расценках...'}</b>\n" \
+                      f"💵 {loc_txt[loc][5]} <b>{(results['ratePlan']['price']['exactCurrent']) if results['ratePlan']['price']['exactCurrent'] else loc_txt[loc][11]}</b>\n" \
+                      f"💵 {loc_txt[loc][6].format(source_dict['diff_date'])} <b>{summa if results['ratePlan']['price']['exactCurrent'] else loc_txt[loc][11]}</b>\n" \
                       f"🌍 {loc_txt[loc][7]}" + f"{links_htmls.format(results['id'])}\n\n"
 
                 if source_dict['status_show_photo']:
