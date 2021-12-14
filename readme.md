@@ -17,22 +17,26 @@
     Python 3.9+
 
 ### Libraries:
-
-    beautifulsoup4
-    certifi==2021.10.8
-    charset-normalizer==2.0.7
-    emoji==1.6.1
-    frozenlist==1.2.0
-    idna==3.3
-    pyTelegramBotAPI==4.2.2
-    python-dateutil==2.8.2
-    python-decouple==3.5
-    python-telegram-bot-calendar @ git+https://github.com/artembakhanov/python-telegram-bot-calendar.git@00cb20d566565d7bd1602e006eb300b27279c112
-    requests==2.26.0
-    six==1.16.0
-    soupsieve==2.3.1
-    typing_extensions==4.0.1
-    urllib3==1.26.7
+        Package                      Version
+    ---------------------------- ---------
+    beautifulsoup4               4.10.0
+    certifi                      2021.10.8
+    charset-normalizer           2.0.7
+    emoji                        1.6.1
+    frozenlist                   1.2.0
+    idna                         3.3
+    pip                          21.3.1
+    pyTelegramBotAPI             4.2.2
+    python-dateutil              2.8.2
+    python-decouple              3.5
+    python-telegram-bot-calendar 1.0.5 @ git+https://github.com/artembakhanov/python-telegram-bot-calendar.git@00cb20d566565d7bd1602e006eb300b27279c112
+    requests                     2.26.0
+    setuptools                   58.3.0
+    six                          1.16.0
+    soupsieve                    2.3.1
+    typing_extensions            4.0.1
+    urllib3                      1.26.7
+    wheel                        0.36.2
 
 ### To install locally:
 

@@ -78,4 +78,4 @@ commands_bot = {
     "en_US": {
         "lowprice": "Search for cheap hotels",
         "highprice": "Search for luxury hotels", "bestdeal": "Search for the best hotels",
-        "history": "Show request history", "help": "Help", }}
+        "history": "Show request history", "help": "Help"}}

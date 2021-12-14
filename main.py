@@ -21,6 +21,8 @@ user = {}
 
 
 class Keyboard:
+    """ Класс инлайн кнопок
+    """
 
     def __init__(self):
         self.__markup: types.InlineKeyboardMarkup = types.InlineKeyboardMarkup()
@@ -72,23 +74,24 @@ class Keyboard:
                 types.BotCommand("history", commands_bot[lng]["history"]),
                 types.BotCommand("help", commands_bot[lng]["help"])]
 
+
 class MyStyleCalendar(WYearTelegramCalendar):
+    """ Класс календаря с выбором дня месяца
+    """
     first_step = DAY
     prev_button = "⬅️"
     next_button = "➡️"
 
 
-def diff_date(checkIn: str, checkOut: str):
+def diff_date(checkIn: str, checkOut: str) -> int:
     """
     Функция определения количества суток проживания
     :return: возвращает количество суток
     """
-    a = checkIn.split('-')
-    b = checkOut.split('-')
+    a, b = checkIn.split('-'), checkOut.split('-')
     d = str(datetime.date(int(b[0]), int(b[1]), int(b[2])) - datetime.date(int(a[0]), int(a[1]), int(a[2])))
-    diff_date = int(d.split()[0])
 
-    return diff_date
+    return int(d.split()[0])
 
 
 @bot.message_handler(commands=["help", "start"])
@@ -121,6 +124,11 @@ def bestdeal_message(message: types.Message):
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
     user[message.chat.id].clearCache()
+    user[message.chat.id].command = message.text.lower()
+    if user[message.chat.id].language == '':
+        user[message.chat.id].language = (
+            message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
+                message.chat.id].language)
     pass
 
 
@@ -159,11 +167,12 @@ def ask_search_city(message: types.Message):
     user[message.chat.id].language = (
         "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
     user[message.chat.id].currency = ('RUB' if user[message.chat.id].language == 'ru_RU' else 'USD')
-    bot.set_my_commands(user[message.chat.id].keyboard.my_commands(user[message.chat.id].language))
+    bot.set_my_commands(Keyboard().my_commands(user[message.chat.id].language))
     msg = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
     user[message.from_user.id].message_id = msg.message_id
-    if not get_city_id(message):
-        command = user[message.chat.id].command
+    command = user[message.from_user.id].command
+    query_str = user[message.from_user.id].query_string('0')
+    if not get_city_id(query_str, message):
         user[message.chat.id].clearCache()
         user[message.chat.id].command = command
         bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][1])
@@ -215,8 +224,9 @@ def step_show_info(message: types.Message):
     :param mess: объект входящего сообщения от пользователя
     """
     bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
-    querystring = query_string(user[message.chat.id].command, user[message.chat.id].getSource_dict())
-    hotel_query(querystring, user[message.chat.id].getSource_dict(), message)
+    command = user[message.chat.id].command
+    query_str = user[message.chat.id].query_string(command)
+    hotel_query(query_str, message)
 
 
 def history(message: types.Message):
@@ -224,7 +234,7 @@ def history(message: types.Message):
         user[message.chat.id].language = (
             message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
                 message.chat.id].language)
-    bot.set_my_commands(user[message.chat.id].keyboard.my_commands(user[message.chat.id].language))
+    bot.set_my_commands(Keyboard().my_commands(user[message.chat.id].language))
     history = user[message.chat.id].history(logging, datetime)
     txt = loctxt[user[message.chat.id].language][11]
     if len(history) == 0:
@@ -277,35 +287,6 @@ def req_api(url: str, querystring: dict, lng="en_US") -> Any:
         return server_error[lng]["erjson"]
 
 
-def query_string(command: str, qstring: dict) -> dict:
-    """Функция формирует строку запроса в виде словаря
-    :param command: команды от пользователя /lowprice, /highprice, /bestdeal
-    :param qstring: исходные данные в виде словаря для формирования строки запроса
-    возвращает строку запроса к API в виде словаря
-
-    """
-    querystring = {
-        "destinationId": qstring['id_city'],
-        "pageNumber": "1",
-        "pageSize": qstring['count_show_hotels'],
-        "checkIn": qstring['checkIn'],
-        "checkOut": qstring['checkOut'],
-        "adults1": "1",
-        "sortOrder": "PRICE",
-        "locale": qstring['language'],
-        "currency": qstring['currency']
-    }
-    if commands[1] == command:
-        querystring.update({"sortOrder": "PRICE_HIGHEST_FIRST"})
-    if commands[2] == command:
-        querystring.update({"pageSize": "25", "priceMin": qstring['min'],
-                            "priceMax": qstring['max'],
-                            "sortOrder": "PRICE",
-                            "landmarkIds": ("City center" if qstring['language'] == "en_US" else "Центр города")}
-                           )
-    return querystring
-
-
 def get_photos(id_photo: str) -> list:
     """
     Функция возвращает список ссылок на фотографии отеля. Если не найдены, возвращает пустой список.
@@ -323,16 +304,14 @@ def get_photos(id_photo: str) -> list:
     return photo_list
 
 
-def get_city_id(message: types.Message) -> bool:
+def get_city_id(querystring: dict, message: types.Message) -> bool:
     """
     Функция выводит в чат города.
     :param message: сообщение
     """
     lang = user[message.chat.id].language
-
     l_txt = loc[lang]
-    search_city = user[message.chat.id].search_city
-    querystring = {"query": search_city, "locale": lang}
+    search_city = querystring["query"]
     result_id_city = req_api(config('URL'), querystring, lang)
 
     if isinstance(result_id_city, dict) and not result_id_city.get("message"):
@@ -363,18 +342,17 @@ def get_city_id(message: types.Message) -> bool:
         return True
 
 
-def hotel_query(querystring: dict, source_dict: dict, message: types.Message):
+def hotel_query(querystring: dict, message: types.Message):
     """
     Формирует словарь отелей на основе запроса пользователя и сортировкой по цене.
     Если отелей не найдено возвращает пустой словарь.
     :param querystring: строка запроса
-    :param source_dict: исходные данные для формирования строки запроса
     :return result_low: возвращает словарь (название отеля, адрес,
     фотографии отеля (если пользователь счёл необходимым их вывод)
     """
 
     url_low = config('URL_LOW')
-    loc = source_dict['language']
+    loc = querystring["locale"]
     low_data = req_api(url_low, querystring, loc)
 
     links_htmls = ("https://ru.hotels.com/ho{}" if loc[:2] == "ru"
@@ -384,22 +362,22 @@ def hotel_query(querystring: dict, source_dict: dict, message: types.Message):
         for hotel_count, results in enumerate(low_data['data']['body']['searchResults']['results']):
             difdate = diff_date(user[message.chat.id].checkIn, user[message.chat.id].checkOut)
             summa = round(float(difdate) * results["ratePlan"]["price"]["exactCurrent"], 2)
-            if source_dict['count_show_hotels'] != hotel_count:
+            if querystring["pageSize"] != hotel_count:
                 txt = f"<strong>⭐⭐⭐{loc_txt[loc][0]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐⭐⭐</strong>\n" \
                       f"🏨 {loc_txt[loc][1]} {results['name']}\n" \
                       f"       {loc_txt[loc][2]} {results['address'].get('countryName')}, {results['address'].get('locality')}, " \
                       f"{(results['address'].get('streetAddress') if results['address'].get('streetAddress') else loc_txt[loc][10])}\n" \
                       f"🚗 {loc_txt[loc][3]} {results['landmarks'][0]['distance']}\n" \
-                      f"📅 {loc_txt[loc][4]} {source_dict['checkIn']} - {source_dict['checkOut']}\n" \
+                      f"📅 {loc_txt[loc][4]} {querystring['checkIn']} - {querystring['checkOut']}\n" \
                       f"💵 {loc_txt[loc][5]} <b>{(results['ratePlan']['price']['exactCurrent']) if results['ratePlan']['price']['exactCurrent'] else loc_txt[loc][11]}</b>\n" \
                       f"💵 {loc_txt[loc][6].format(difdate)} <b>{summa if results['ratePlan']['price']['exactCurrent'] else loc_txt[loc][11]}</b>\n" \
                       f"🌍 {loc_txt[loc][7]}" + f"{links_htmls.format(results['id'])}\n\n"
 
-                if source_dict['status_show_photo']:
+                if user[message.chat.id].status_show_photo:
                     data_photo = get_photos(results['id'])
 
                     photo_lst = [types.InputMediaPhoto(media=link) for index, link in enumerate(data_photo) if
-                                 source_dict['count_show_photo'] > index]
+                                 user[message.chat.id].count_show_photo > index]
                     try:
                         bot.send_media_group(chat_id=message.chat.id, media=photo_lst)
                     except Exception as er:
@@ -479,7 +457,7 @@ def inline(call):
 
     elif call.data in ['ru_RU', 'en_US']:
         user[call.message.chat.id].language = call.data
-        bot.set_my_commands(user[call.message.chat.id].keyboard.my_commands(user[call.message.chat.id].language))
+        bot.set_my_commands(Keyboard().my_commands(user[call.message.chat.id].language))
         user[call.message.chat.id].message_id = call.message.message_id
         bot.delete_message(chat_id=call.message.chat.id, message_id=user[call.message.chat.id].message_id)
         if user[call.message.chat.id].command in ['/start', '/help']:
