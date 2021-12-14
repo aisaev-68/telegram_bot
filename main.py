@@ -100,6 +100,8 @@ def help_start_message(message: types.Message):
         user[message.from_user.id] = Users(message)
     user[message.chat.id].clearCache()
     user[message.chat.id].command = message.text.lower()
+    # with open('botrequests/images/hotel-icon.jpg', 'rb') as f:
+    #     bot.set_chat_photo(chat_id=message.chat.id, photo=f)
     bot.send_message(chat_id=message.chat.id,
                      text='Выберите язык (Choose language)',
                      reply_markup=Keyboard().set_lang())
@@ -322,8 +324,9 @@ def get_city_id(querystring: dict, message: types.Message) -> bool:
             for city in result_id_city['suggestions']:
                 for name in city['entities']:
                     parse_city = (BeautifulSoup(name['caption'], 'html.parser').get_text()).lower()
-                    if parse_city.startswith(search_city) and name['type'] == 'CITY':
-                        # Добавить для точного совпадения города: and name['name'].lower() == search_city
+                    if name['type'] == 'CITY':
+                        # Добавить для точного совпадения города: parse_city.startswith(search_city) and
+                        # and name['name'].lower() == search_city
                         markup.add(types.InlineKeyboardButton(parse_city.title(),
                                                               callback_data='cbid_' + str(name['destinationId'])))
             markup.add(types.InlineKeyboardButton(l_txt[0],
