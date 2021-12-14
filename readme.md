@@ -49,6 +49,7 @@
         URL="https://hotels4.p.rapidapi.com/locations/search"
         URL_LOW="https://hotels4.p.rapidapi.com/properties/list"
         URL_PHOTOS="https://hotels4.p.rapidapi.com/properties/get-hotel-photos"
+        RAPID_API_KEY=*your token*
 
 
 ### Create and activate a virtual environment:

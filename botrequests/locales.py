@@ -1,6 +1,6 @@
-l_text = {'ru_RU': ['В каком городе будем искать?', 'Будет выведена информация о двух последних запросах',
+l_text = {'ru_RU': ['В каком городе будем искать?', 'Будет выведена информация о трех последних запросах',
                     'Извините, данная команда мне неизвестна.\n'],
-          'en_US': ['What city are we looking for?', 'Information about the last two requests will be displayed',
+          'en_US': ['What city are we looking for?', 'Information about the last three requests will be displayed',
                     'Sorry, this command is unknown to me.\n']}
 
 info_help = {'ru_RU':

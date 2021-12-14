@@ -26,10 +26,9 @@ class Users:
         self.__distance_max: float = 0.0
         self.__language: str = ''
         self.__currency: str = ''
-        #self._keyboard: object = Keyboard()
+        # self._keyboard: object = Keyboard()
         self.__all_hotels: dict = dict()
         self.__message_id: str = ''
-
 
     @property
     def search_city(self) -> str:
@@ -132,7 +131,6 @@ class Users:
     # def kbd(self):
     #     return self._keyboard
 
-
     @property
     def all_hotels(self) -> dict:
         return self.__all_hotels
@@ -222,21 +220,25 @@ class Users:
         """Функция вставки данных (ID пользователя, имени, команды,
         даты запроса, списка найденных гостиниц без фото) в базу данных
         """
+        lng = self.__language
+        d_loc: dict = {"ru_RU": ["Команда:", "Дата и время запроса:"],
+                       "en_US": ["Command:", "Request date and time:"]}
         try:
             con = sqlite3.connect('data.db')
-            cur = con.cursor()
-            cur.execute(
-                "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, name TEXT, command TEXT, date TEXT, hotels TEXT);")
-            con.commit()
+            with con:
+                con.execute(
+                    "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, name TEXT, "
+                    "command TEXT, date TEXT, hotels TEXT);")
             txt = ''
             for item in list(self.__all_hotels.keys()):
                 txt += item
-            cur.execute("INSERT INTO users (user_id, name, command, date, hotels) VALUES(?, ?, ?, ?, ?);",
-                        (self.__id_user, self.__username, self.__command,
-                         str(datetime.datetime.now()), txt))
-            con.close()
+            with con:
+                con.execute("INSERT INTO users (user_id, name, command, date, hotels) VALUES(?, ?, ?, ?, ?);",
+                            (self.__id_user, self.__username, self.__command, str(datetime.datetime.now()),
+                             f"<strong>{d_loc[lng][0]} {self.__command}\n{d_loc[lng][1]} "
+                             f"{str(datetime.datetime.now())}</strong>\n{txt}"))
         except Error:
-            logging.error(f"{datetime.now()} - Модуль database - {Error}")
+            logging.error(f"{datetime.now()} - Функция insert_db - {Error}")
 
     def history(self, logging, datetime) -> list:
         """Функция возвращет историю запросов пользователя (команда,
@@ -244,16 +246,16 @@ class Users:
         """
         try:
             con = sqlite3.connect('data.db')
-            cur = con.cursor()
-            cur.execute(
-                "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, name TEXT, command TEXT, date TEXT, hotels TEXT);")
-            con.commit()
-            cur = con.cursor()
-            cur.execute(f"SELECT command, date, hotels FROM users WHERE user_id ={self.__id_user} ORDER BY rowid DESC LIMIT 2;")
-            rows = cur.fetchall()
-            con.close()
-            return rows
+            with con:
+                con.execute(
+                    "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, name TEXT, "
+                    "command TEXT, date TEXT, hotels TEXT);")
+            with con:
+                cur = con.cursor()
+                cur.execute(
+                    "SELECT hotels FROM users WHERE user_id ={} "
+                    "ORDER BY rowid DESC LIMIT 3;".format(self.__id_user))
+                rows = cur.fetchall()
+                return rows
         except Error:
-            logging.error(f"{datetime.now()} - Модуль database - {Error}")
-
-
+            logging.error(f"{datetime.now()} - Функция insert_db - {Error}")

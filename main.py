@@ -2,7 +2,7 @@
 from decouple import config
 import re
 import json
-from telebot import TeleBot, types
+from telebot import TeleBot, types, util
 import requests
 from bs4 import BeautifulSoup
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
@@ -167,7 +167,8 @@ def ask_search_city(message: types.Message):
     user[message.chat.id].language = (
         "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
     user[message.chat.id].currency = ('RUB' if user[message.chat.id].language == 'ru_RU' else 'USD')
-    bot.set_my_commands(Keyboard().my_commands(user[message.chat.id].language))
+    bot.set_my_commands(commands=Keyboard().my_commands(user[message.chat.id].language),
+                        scope=types.BotCommandScopeChat(message.chat.id))
     msg = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
     user[message.from_user.id].message_id = msg.message_id
     command = user[message.from_user.id].command
@@ -234,18 +235,19 @@ def history(message: types.Message):
         user[message.chat.id].language = (
             message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
                 message.chat.id].language)
-    bot.set_my_commands(Keyboard().my_commands(user[message.chat.id].language))
+    bot.set_my_commands(commands=Keyboard().my_commands(user[message.chat.id].language),
+                        scope=types.BotCommandScopeChat(message.chat.id))
     history = user[message.chat.id].history(logging, datetime)
     txt = loctxt[user[message.chat.id].language][11]
     if len(history) == 0:
-        txt += loctxt[user[message.chat.id].language][12]
+        txt = loctxt[user[message.chat.id].language][12]
         bot.send_message(chat_id=message.chat.id, text=txt)
     else:
         for elem in history:
-            txt += f'{loctxt[user[message.chat.id].language][13]} {elem[0]}\n' \
-                   f'{loctxt[user[message.chat.id].language][14]} {elem[1]}\n{elem[2]}\n'
-            bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
-            txt = ''
+            splitted_text = util.split_string(elem, 3000)
+            for txt in splitted_text:
+                bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
+
 
     bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][15])
 
@@ -457,7 +459,8 @@ def inline(call):
 
     elif call.data in ['ru_RU', 'en_US']:
         user[call.message.chat.id].language = call.data
-        bot.set_my_commands(Keyboard().my_commands(user[call.message.chat.id].language))
+        bot.set_my_commands(commands=Keyboard().my_commands(user[call.message.chat.id].language),
+                            scope=types.BotCommandScopeChat(call.message.chat.id))
         user[call.message.chat.id].message_id = call.message.message_id
         bot.delete_message(chat_id=call.message.chat.id, message_id=user[call.message.chat.id].message_id)
         if user[call.message.chat.id].command in ['/start', '/help']:
