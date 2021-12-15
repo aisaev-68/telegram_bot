@@ -22,11 +22,12 @@ class Users:
         self.__count_show_hotels: int = 0
         self.__count_show_photo: int = 0
         self.__status_show_photo: bool = False
-        self.__price_min_max: dict = dict()
+        self.__price_min: int = 0
+        self.__price_max: int = 0
         self.__distance_max: float = 0.0
+        self.__distance_min: float = 0.0
         self.__language: str = ''
         self.__currency: str = ''
-        # self._keyboard: object = Keyboard()
         self.__all_hotels: dict = dict()
         self.__message_id: str = ''
 
@@ -83,17 +84,32 @@ class Users:
         return self.__distance_max
 
     @distance_max.setter
-    def distance_max(self, distance: float) -> None:
-        self.__distance_max = distance
+    def distance_max(self, dist_max: float) -> None:
+        self.__distance_max = dist_max
 
     @property
-    def price_min_max(self) -> dict:
-        return self.__price_min_max
+    def distance_min(self) -> float:
+        return self.__distance_min
 
-    @price_min_max.setter
-    def price_min_max(self, pr_min_max: str) -> None:
-        self.__price_min_max["price_min"] = pr_min_max.split()[0]
-        self.__price_min_max["price_max"] = pr_min_max.split()[1]
+    @distance_min.setter
+    def distance_min(self, dist_min: float) -> None:
+        self.__distance_min = dist_min
+
+    @property
+    def price_min(self) -> int:
+        return self.__price_min
+
+    @price_min.setter
+    def price_min(self, pr_min: int) -> None:
+        self.__price_min = pr_min
+
+    @property
+    def price_max(self) -> int:
+        return self.__price_max
+
+    @price_max.setter
+    def price_max(self, pr_max: int) -> None:
+        self.__price_max = pr_max
 
     @property
     def command(self) -> str:
@@ -127,10 +143,6 @@ class Users:
     def currency(self, curr: str) -> None:
         self.__currency = curr
 
-    # @property
-    # def kbd(self):
-    #     return self._keyboard
-
     @property
     def all_hotels(self) -> dict:
         return self.__all_hotels
@@ -147,20 +159,22 @@ class Users:
     def status_show_photo(self, status: bool):
         self.__status_show_photo = status
 
-    def query_string(self, command: str) -> dict:
+    def query_string(self, idcity: str =None) -> dict:
         """Функция формирует строку запроса в виде словаря
         :param command: команды от пользователя /lowprice, /highprice, /bestdeal
         :param qstring: исходные данные в виде словаря для формирования строки запроса
         возвращает строку запроса к API в виде словаря
 
         """
-        querystring = {"query": self.__search_city, "locale": self.__language}
+        querystring = {}
+        if idcity == 'city':
+            querystring = {"query": self.__search_city, "locale": self.__language}
 
-        if self.__command == command:
+        elif self.__command == '/lowprice':
             querystring = {
                 "destinationId": self.__id_city,
                 "pageNumber": "1",
-                "pageSize": self.__count_show_hotels,
+                "pageSize": str(self.__count_show_hotels),
                 "checkIn": self.__checkIn,
                 "checkOut": self.__checkOut,
                 "adults1": "1",
@@ -168,11 +182,11 @@ class Users:
                 "locale": self.__language,
                 "currency": self.__currency
             }
-        elif self.__command == command:
+        elif self.__command == '/highprice':
             querystring = {
                 "destinationId": self.__id_city,
                 "pageNumber": "1",
-                "pageSize": self.__count_show_hotels,
+                "pageSize": str(self.__count_show_hotels),
                 "checkIn": self.__checkIn,
                 "checkOut": self.__checkOut,
                 "adults1": "1",
@@ -181,19 +195,19 @@ class Users:
                 "currency": self.__currency
             }
 
-        elif self.__command == command:
+        elif self.__command == '/bestdeal':
             querystring = {
                 "destinationId": self.__id_city,
                 "pageNumber": "1",
-                "pageSize": "25",
+                "pageSize": str(self.__count_show_hotels),
                 "checkIn": self.__checkIn,
                 "checkOut": self.__checkOut,
                 "adults1": "1",
                 "sortOrder": "PRICE",
                 "locale": self.__language,
                 "currency": self.__currency,
-                "priceMin": self.__price_min_max.get('min'),
-                "priceMax": self.__price_min_max.get('max'),
+                "priceMin": str(self.__price_min),
+                "priceMax": str(self.__price_max),
                 "landmarkIds": ("City center" if self.__language == "en_US" else "Центр города")
             }
 
@@ -210,7 +224,9 @@ class Users:
         self.__count_show_hotels: int = 0
         self.__count_show_photo: int = 0
         self.__status_show_photo: bool = False
-        self.__price_min_max: dict = dict()
+        self.__price_min: int = 0
+        self.__price_max: int = 0
+        self.__distance_min: float = 0.0
         self.__distance_max: float = 0.0
         self.__currency: str = ''
         self.__all_hotels: dict = dict()

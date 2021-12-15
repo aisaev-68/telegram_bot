@@ -34,7 +34,7 @@ class Keyboard:
                           types.InlineKeyboardButton(text='✅English', callback_data='en_US'))
         return self.__markup
 
-    def hotel_numb(self) -> types.InlineKeyboardMarkup:
+    def hotel_numb(self, lang) -> types.InlineKeyboardMarkup:
         """ Функция инлайн кнопок для выводы количества гостиниц
         """
         self.__markup.row_width = 5
@@ -43,16 +43,19 @@ class Keyboard:
                           types.InlineKeyboardButton(text='15', callback_data='fifteen'),
                           types.InlineKeyboardButton(text='20', callback_data='twenty'),
                           types.InlineKeyboardButton(text='25', callback_data='twenty_five'))
+        self.__markup.row_width = 1
+        self.__markup.add(types.InlineKeyboardButton(text=loc[lang][0], callback_data='Cancel_process'))
         return self.__markup
 
-    def photo_yes_no(self, loc) -> types.InlineKeyboardMarkup:
+    def photo_yes_no(self, lang) -> types.InlineKeyboardMarkup:
         """ Функция инлайн кнопок с вопросом будем ли искать фото?
         """
-        self.__markup.add(types.InlineKeyboardButton(text='✅' + hotel_kbd[loc][0], callback_data='yes_photo'),
-                          types.InlineKeyboardButton(text='❌' + hotel_kbd[loc][1], callback_data='no_photo'))
+        self.__markup.add(types.InlineKeyboardButton(text='✅' + hotel_kbd[lang][0], callback_data='yes_photo'),
+                          types.InlineKeyboardButton(text='❌' + hotel_kbd[lang][1], callback_data='no_photo'),
+                          types.InlineKeyboardButton(text=loc[lang][0], callback_data='Cancel_process'))
         return self.__markup
 
-    def photo_numb(self) -> types.InlineKeyboardMarkup:
+    def photo_numb(self, lang) -> types.InlineKeyboardMarkup:
         """ Функция инлайн кнопок для выбора количества выводимых фото
         """
         self.__markup.row_width = 5
@@ -61,6 +64,8 @@ class Keyboard:
                           types.InlineKeyboardButton(text='3', callback_data='three_photo'),
                           types.InlineKeyboardButton(text='4', callback_data='four_photo'),
                           types.InlineKeyboardButton(text='5', callback_data='five_photo'))
+        self.__markup.row_width = 1
+        self.__markup.add(types.InlineKeyboardButton(text=loc[lang][0], callback_data='Cancel_process'))
         return self.__markup
 
     @classmethod
@@ -131,7 +136,8 @@ def bestdeal_message(message: types.Message):
         user[message.chat.id].language = (
             message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
                 message.chat.id].language)
-    pass
+    m = bot.send_message(message.chat.id, l_text[user[message.chat.id].language][0])
+    bot.register_next_step_handler(m, ask_search_city)
 
 
 @bot.message_handler(commands=["history"])
@@ -173,9 +179,10 @@ def ask_search_city(message: types.Message):
                         scope=types.BotCommandScopeChat(message.chat.id))
     msg = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
     user[message.from_user.id].message_id = msg.message_id
-    command = user[message.from_user.id].command
-    query_str = user[message.from_user.id].query_string('0')
+
+    query_str = user[message.from_user.id].query_string('city')
     if not get_city_id(query_str, message):
+        command = user[message.from_user.id].command
         user[message.chat.id].clearCache()
         user[message.chat.id].command = command
         bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][1])
@@ -199,7 +206,51 @@ def ask_count_hotels(message: types.Message):
     bot.edit_message_text(text=loctxt[user[message.chat.id].language][5],
                           chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
-                          reply_markup=Keyboard().hotel_numb())
+
+                          reply_markup=Keyboard().hotel_numb(user[message.chat.id].language))
+
+
+def price_min_max(message):
+    """Функция предлагает ввести через пробел диапазон диапазон цен, если все введено корректно
+    вызывает функцию distance_min_max
+    :param message: входящее сообщение от пользователя
+    """
+    try:
+        price_max, price_min = int(message.text.split(' ')[1]), int(message.text.split(' ')[0])
+        if price_min > price_max:
+            bot.send_message(text='Вы перепутали цены местами, я исправил.',
+                             chat_id=message.from_user.id)
+            price_min, price_max = price_max, price_min
+        user[message.chat.id].price_min = price_min
+        user[message.chat.id].price_max = price_max
+        m = bot.send_message(text='Укажите через пробел диапазон расстояния до центра в км.',
+                             chat_id=message.chat.id)
+        bot.register_next_step_handler(m, distance_min_max)
+    except Exception as er:
+        logging.error(f"{datetime.datetime.now()} - {er} - Функция distance_min_max - Ошибка ввода мин- макс. цены")
+        msg = bot.send_message(text='Ошибка ввода. Пожалуйста повторите ввод.',
+                               chat_id=message.chat.id)
+        bot.register_next_step_handler(msg, price_min_max)
+
+
+def distance_min_max(message):
+    """Функция предлагает ввести через пробел диапазон расстояния до центра, если все введено корректно
+    вызывает функцию hotel_query вывода гостиниц в чат
+    :param message: входящее сообщение от пользователя
+    """
+
+    try:
+        user[message.chat.id].distance_max, user[message.chat.id].distance_min = float(message.text.split(' ')[1]), \
+                                                                                 float(message.text.split(' ')[0])
+        # bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
+        query_str = user[message.chat.id].query_string()
+        hotel_query(query_str, message)
+    except Exception as er:
+        logging.error(
+            f"{datetime.datetime.now()} - {er} - Функция distance_min_max - Ошибка ввода мин- макс. расстояния")
+        msg = bot.send_message(text='Ошибка ввода. Пожалуйста введите через пробел числа.',
+                               chat_id=message.chat.id)
+        bot.register_next_step_handler(msg, distance_min_max)
 
 
 def ask_show_photo(message: types.Message):
@@ -214,25 +265,36 @@ def ask_show_photo(message: types.Message):
 def ask_count_photo(message: types.Message):
     """
     Функция прелагает выбрать количество фото для загрузки
-    :param mess: объект входящего сообщения от пользователя
+    :param message: объект входящего сообщения от пользователя
     """
     bot.edit_message_text(text=loctxt[user[message.chat.id].language][7], chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
-                          reply_markup=Keyboard().photo_numb())
+                          reply_markup=Keyboard().photo_numb(user[message.chat.id].language))
 
 
 def step_show_info(message: types.Message):
     """
-    Функция для вывода информации в чат
-    :param mess: объект входящего сообщения от пользователя
+    Функция для вызова функции hotel_query вывода информации в чат. В случае если выбрана команда /bestdeal
+    вызывается функция price_min_max
+    :param message: объект входящего сообщения от пользователя
     """
-    bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
     command = user[message.chat.id].command
-    query_str = user[message.chat.id].query_string(command)
-    hotel_query(query_str, message)
+    bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
+    if command == '/bestdeal':
+        bot.send_message(chat_id=message.chat.id, text='Укажите через пробел диапазон цен в рублях.')
+
+        bot.register_next_step_handler(message, price_min_max)
+    else:
+
+        query_str = user[message.chat.id].query_string()
+        hotel_query(query_str, message)
 
 
 def history(message: types.Message):
+    """
+    Функция вывода трех последних запросов в чат.
+    :param message: объект входящего сообщения от пользователя
+    """
     if user[message.chat.id].language == '':
         user[message.chat.id].language = (
             message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
@@ -249,7 +311,6 @@ def history(message: types.Message):
             splitted_text = util.split_string(elem, 3000)
             for txt in splitted_text:
                 bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
-
 
     bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][15])
 
@@ -287,7 +348,8 @@ def req_api(url: str, querystring: dict, lng="en_US") -> Any:
         logging.error(f"{datetime.datetime.now()} - {ertime} - Функция req_api - Время ожидания запроса истекло")
         return server_error[lng]["ertime"]
     except json.decoder.JSONDecodeError as erjson:
-        logging.error(f"{datetime.datetime.now()} - {erjson} - Функция req_api - Получен некорректный ответ от сервиса.")
+        logging.error(
+            f"{datetime.datetime.now()} - {erjson} - Функция req_api - Получен некорректный ответ от сервиса.")
         return server_error[lng]["erjson"]
 
 
@@ -358,15 +420,43 @@ def hotel_query(querystring: dict, message: types.Message):
 
     url_low = config('URL_LOW')
     loc = querystring["locale"]
-    low_data = req_api(url_low, querystring, loc)
+    data = req_api(url_low, querystring, loc)
+    print(data)
 
     links_htmls = ("https://ru.hotels.com/ho{}" if loc[:2] == "ru"
                    else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
+    if data:
+        if user[message.chat.id].command == '/bestdeal':
+            if user[message.chat.id].language == 'ru_RU':
+                f = [d for d in data['data']['body']['searchResults']['results']]
+                print(f)
+                low_data = [d for d in data['data']['body']['searchResults']['results']
+                            if user[message.chat.id].distance_min <= float(
+                        d['landmarks'][0]['distance'].split(' ')[0].replace(',', '.')) <= user[
+                                message.chat.id].distance_max]
+            else:
+                #'fullyBundledPricePerStay' поле которое считает сумму за все дни
 
-    if low_data:
-        for hotel_count, results in enumerate(low_data['data']['body']['searchResults']['results']):
+                low_data = [d for d in data['data']['body']['searchResults']['results']
+                            if user[message.chat.id].distance_min <= float(
+                        d['landmarks'][0]['distance'].split(' ')[0]) <= user[message.chat.id].distance_max]
+        else:
+            low_data = [d for d in data['data']['body']['searchResults']['results']]
+
+        for hotel_count, results in enumerate(low_data):
             difdate = diff_date(user[message.chat.id].checkIn, user[message.chat.id].checkOut)
-            summa = round(float(difdate) * results["ratePlan"]["price"]["exactCurrent"], 2)
+            if results['ratePlan']['price']['exactCurrent']:
+                if user[message.chat.id].language == 'ru_RU':
+                    price_period = float(results["ratePlan"]["price"]["exactCurrent"])
+                    price_per_day = round(price_period / float(difdate), 2)
+                else:
+                    price_per_day = float(results["ratePlan"]["price"]["exactCurrent"])
+                    price_period = round(price_per_day * difdate, 2)
+            else:
+                price_per_day = loc_txt[loc][11]
+                price_period = loc_txt[loc][11]
+
+            hotels = results
             if querystring["pageSize"] != hotel_count:
                 txt = f"<strong>⭐⭐⭐{loc_txt[loc][0]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐⭐⭐</strong>\n" \
                       f"🏨 {loc_txt[loc][1]} {results['name']}\n" \
@@ -374,12 +464,12 @@ def hotel_query(querystring: dict, message: types.Message):
                       f"{(results['address'].get('streetAddress') if results['address'].get('streetAddress') else loc_txt[loc][10])}\n" \
                       f"🚗 {loc_txt[loc][3]} {results['landmarks'][0]['distance']}\n" \
                       f"📅 {loc_txt[loc][4]} {querystring['checkIn']} - {querystring['checkOut']}\n" \
-                      f"💵 {loc_txt[loc][5]} <b>{(results['ratePlan']['price']['exactCurrent']) if results['ratePlan']['price']['exactCurrent'] else loc_txt[loc][11]}</b>\n" \
-                      f"💵 {loc_txt[loc][6].format(difdate)} <b>{summa if results['ratePlan']['price']['exactCurrent'] else loc_txt[loc][11]}</b>\n" \
+                      f"💵 {loc_txt[loc][5]} <b>{price_per_day}</b>\n" \
+                      f"💵 {loc_txt[loc][6].format(difdate)} <b>{price_period}</b>\n" \
                       f"🌍 {loc_txt[loc][7]}" + f"{links_htmls.format(results['id'])}\n\n"
 
                 if user[message.chat.id].status_show_photo:
-                    data_photo = get_photos(results['id'])
+                    data_photo = get_photos(hotels['id'])
 
                     photo_lst = [types.InputMediaPhoto(media=link) for index, link in enumerate(data_photo) if
                                  user[message.chat.id].count_show_photo > index]
@@ -402,11 +492,10 @@ def hotel_query(querystring: dict, message: types.Message):
                 txt = ''
         user[message.chat.id].insert_db(logging, datetime)
         bot.send_message(chat_id=message.chat.id, text=loc_txt[loc][8].format(len(user[message.chat.id].all_hotels)))
-
         with open('hotel.json', 'w') as f:
             json.dump(user[message.chat.id].all_hotels, f, indent=4)
     else:
-        bot.send_message(chat_id=message.chat.id, text=low_data,
+        bot.send_message(chat_id=message.chat.id, text=data,
                          disable_web_page_preview=True,
                          parse_mode="HTML")
 
@@ -451,8 +540,9 @@ def inline(call):
     elif call.data in ["five", "ten", "fifteen", "twenty", "twenty_five"]:
         numbers_hotel = {"five": 5, "ten": 10, "fifteen": 15, "twenty": 20, "twenty_five": 25}
         user[call.message.chat.id].count_show_hotels = numbers_hotel[call.data]
-        bot.answer_callback_query(callback_query_id=call.id)
         ask_show_photo(call.message)
+        bot.answer_callback_query(callback_query_id=call.id)
+
 
     elif call.data in ["one_photo", "two_photo", "three_photo", "four_photo", "five_photo"]:
         numbers_photo = {"one_photo": 1, "two_photo": 2, "three_photo": 3, "four_photo": 4, "five_photo": 5}
