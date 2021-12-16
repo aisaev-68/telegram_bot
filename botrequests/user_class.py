@@ -161,8 +161,7 @@ class Users:
 
     def query_string(self, idcity: str =None) -> dict:
         """Функция формирует строку запроса в виде словаря
-        :param command: команды от пользователя /lowprice, /highprice, /bestdeal
-        :param qstring: исходные данные в виде словаря для формирования строки запроса
+        :param idcity: команды для формирования строки запроса по поиску ID города
         возвращает строку запроса к API в виде словаря
 
         """
