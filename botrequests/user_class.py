@@ -210,7 +210,6 @@ class Users:
                 "priceMax": str(self.__price_max),
                 "landmarkIds": ("City center" if self.__language == "en_US" else "Центр города")
             }
-
         return querystring
 
     def clearCache(self):
@@ -250,9 +249,9 @@ class Users:
                 txt += item
             with con:
                 con.execute("INSERT INTO users (user_id, name, command, date, hotels) VALUES(?, ?, ?, ?, ?);",
-                            (self.__id_user, self.__username, self.__command, str(datetime.datetime.now()),
+                            (self.__id_user, self.__username, self.__command, str(datetime.now()),
                              f"<strong>{d_loc[lng][0]} {self.__command}\n{d_loc[lng][1]} "
-                             f"{str(datetime.datetime.now())}</strong>\n{txt}"))
+                             f"{str(datetime.now())}</strong>\n{txt}"))
         except Error:
             logging.error(f"{datetime.now()} - Функция insert_db - {Error}")
 

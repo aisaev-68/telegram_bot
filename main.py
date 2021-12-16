@@ -1,83 +1,25 @@
-# -*- coding: utf-8 -*-
+## -*- coding: utf-8 -*-
+
 from decouple import config
 import re
 import json
-from telebot import TeleBot, types, util
+from telebot import TeleBot, util
+from keyboards import types, Keyboard
 import requests
-from bs4 import BeautifulSoup
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
-import datetime
+from datetime import datetime
 import logging
 from typing import Any
+from botrequests.parse_text import city_parse, price_parse
 from botrequests.user_class import Users
-from botrequests.locales import l_text, loctxt, info_help, loc_txt, commands, \
-    server_error, loc, hotel_kbd, commands_bot
+from botrequests.locales import l_text, loctxt, info_help, loc_txt, \
+    server_error, loc
 
 bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
 logging.basicConfig(filename="logger.log", level=logging.INFO)
 
 user = {}
-
-
-class Keyboard:
-    """ Класс инлайн кнопок
-    """
-
-    def __init__(self):
-        self.__markup: types.InlineKeyboardMarkup = types.InlineKeyboardMarkup()
-
-    def set_lang(self):
-        """ Функция инлайн кнопок с выбора языка?
-        """
-        self.__markup.add(types.InlineKeyboardButton(text='✅Russian', callback_data='ru_RU'),
-                          types.InlineKeyboardButton(text='✅English', callback_data='en_US'))
-        return self.__markup
-
-    def hotel_numb(self, lang) -> types.InlineKeyboardMarkup:
-        """ Функция инлайн кнопок для выводы количества гостиниц
-        """
-        self.__markup.row_width = 5
-        self.__markup.add(types.InlineKeyboardButton(text='5', callback_data='five'),
-                          types.InlineKeyboardButton(text='10', callback_data='ten'),
-                          types.InlineKeyboardButton(text='15', callback_data='fifteen'),
-                          types.InlineKeyboardButton(text='20', callback_data='twenty'),
-                          types.InlineKeyboardButton(text='25', callback_data='twenty_five'))
-        self.__markup.row_width = 1
-        self.__markup.add(types.InlineKeyboardButton(text=loc[lang][0], callback_data='Cancel_process'))
-        return self.__markup
-
-    def photo_yes_no(self, lang) -> types.InlineKeyboardMarkup:
-        """ Функция инлайн кнопок с вопросом будем ли искать фото?
-        """
-        self.__markup.add(types.InlineKeyboardButton(text='✅' + hotel_kbd[lang][0], callback_data='yes_photo'),
-                          types.InlineKeyboardButton(text='❌' + hotel_kbd[lang][1], callback_data='no_photo'),
-                          types.InlineKeyboardButton(text=loc[lang][0], callback_data='Cancel_process'))
-        return self.__markup
-
-    def photo_numb(self, lang) -> types.InlineKeyboardMarkup:
-        """ Функция инлайн кнопок для выбора количества выводимых фото
-        """
-        self.__markup.row_width = 5
-        self.__markup.add(types.InlineKeyboardButton(text='1', callback_data='one_photo'),
-                          types.InlineKeyboardButton(text='2', callback_data='two_photo'),
-                          types.InlineKeyboardButton(text='3', callback_data='three_photo'),
-                          types.InlineKeyboardButton(text='4', callback_data='four_photo'),
-                          types.InlineKeyboardButton(text='5', callback_data='five_photo'))
-        self.__markup.row_width = 1
-        self.__markup.add(types.InlineKeyboardButton(text=loc[lang][0], callback_data='Cancel_process'))
-        return self.__markup
-
-    @classmethod
-    def my_commands(cls, lng) -> [types.BotCommand]:
-        """ Функция возвращает каманды на языке пользователя
-        """
-
-        return [types.BotCommand("lowprice", commands_bot[lng]["lowprice"]),
-                types.BotCommand("highprice", commands_bot[lng]["highprice"]),
-                types.BotCommand("bestdeal", commands_bot[lng]["bestdeal"]),
-                types.BotCommand("history", commands_bot[lng]["history"]),
-                types.BotCommand("help", commands_bot[lng]["help"])]
 
 
 class MyStyleCalendar(WYearTelegramCalendar):
@@ -88,46 +30,23 @@ class MyStyleCalendar(WYearTelegramCalendar):
     next_button = "➡️"
 
 
-def diff_date(checkIn: str, checkOut: str) -> int:
-    """
-    Функция определения количества суток проживания
-    :return: возвращает количество суток
-    """
-    a, b = checkIn.split('-'), checkOut.split('-')
-    d = str(datetime.date(int(b[0]), int(b[1]), int(b[2])) - datetime.date(int(a[0]), int(a[1]), int(a[2])))
-
-    return int(d.split()[0])
-
-
 @bot.message_handler(commands=["help", "start"])
 def help_start_message(message: types.Message):
+    """Функция для обработки команд "help", "start"
+    """
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
     user[message.chat.id].clearCache()
     user[message.chat.id].command = message.text.lower()
-    # with open('botrequests/images/hotel-icon.jpg', 'rb') as f:
-    #     bot.set_chat_photo(chat_id=message.chat.id, photo=f)
     bot.send_message(chat_id=message.chat.id,
                      text='Выберите язык (Choose language)',
                      reply_markup=Keyboard().set_lang())
 
 
-@bot.message_handler(commands=["lowprice", "highprice"])
-def lowprice_message(message: types.Message):
-    if not user.get(message.from_user.id):
-        user[message.from_user.id] = Users(message)
-    user[message.chat.id].clearCache()
-    user[message.chat.id].command = message.text.lower()
-    if user[message.chat.id].language == '':
-        user[message.chat.id].language = (
-            message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
-                message.chat.id].language)
-    m = bot.send_message(message.chat.id, l_text[user[message.chat.id].language][0])
-    bot.register_next_step_handler(m, ask_search_city)
-
-
-@bot.message_handler(commands=["bestdeal"])
-def bestdeal_message(message: types.Message):
+@bot.message_handler(commands=["lowprice", "highprice", "bestdeal"])
+def command_message(message: types.Message):
+    """Функция для обработки команд "lowprice", "highprice", "bestdeal"
+    """
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
     user[message.chat.id].clearCache()
@@ -142,6 +61,8 @@ def bestdeal_message(message: types.Message):
 
 @bot.message_handler(commands=["history"])
 def history_message(message: types.Message):
+    """Функция для обработки команды вывода истории
+    """
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
     user[message.chat.id].clearCache()
@@ -155,6 +76,9 @@ def history_message(message: types.Message):
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message: types.Message):
+    """Функция слушает все входящие сообщения и если
+    не знакомы выдает сообщения и строку помощи
+    """
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
     user[message.chat.id].language = (
@@ -191,6 +115,8 @@ def ask_search_city(message: types.Message):
 
 
 def ask_date(message: types.Message, txt):
+    """Функция предлагает ввести дату
+    """
     lng = user[message.chat.id].language
     bot.edit_message_text(text=txt, chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
@@ -216,10 +142,10 @@ def price_min_max(message):
     :param message: входящее сообщение от пользователя
     """
     try:
-        price_max, price_min = int(message.text.split(' ')[1]), int(message.text.split(' ')[0])
+        price_max, price_min = int(message.text.split()[1]), int(message.text.split()[0])
         if price_min > price_max:
             bot.send_message(text='Вы перепутали цены местами, я исправил.',
-                             chat_id=message.from_user.id)
+                             chat_id=message.chat.id)
             price_min, price_max = price_max, price_min
         user[message.chat.id].price_min = price_min
         user[message.chat.id].price_max = price_max
@@ -227,7 +153,7 @@ def price_min_max(message):
                              chat_id=message.chat.id)
         bot.register_next_step_handler(m, distance_min_max)
     except Exception as er:
-        logging.error(f"{datetime.datetime.now()} - {er} - Функция distance_min_max - Ошибка ввода мин- макс. цены")
+        logging.error(f"{datetime.now()} - {er} - Функция price_min_max - Ошибка ввода мин- макс. цены")
         msg = bot.send_message(text='Ошибка ввода. Пожалуйста повторите ввод.',
                                chat_id=message.chat.id)
         bot.register_next_step_handler(msg, price_min_max)
@@ -240,17 +166,24 @@ def distance_min_max(message):
     """
 
     try:
-        user[message.chat.id].distance_max, user[message.chat.id].distance_min = float(message.text.split(' ')[1]), \
-                                                                                 float(message.text.split(' ')[0])
+
+        user[message.chat.id].distance_max, user[message.chat.id].distance_min = float(message.text.split()[1]), \
+                                                                                 float(message.text.split()[0])
+        if user[message.chat.id].distance_min > user[message.chat.id].distance_max:
+            bot.send_message(text='Вы перепутали расстояния местами, я исправил.',
+                             chat_id=message.chat.id)
+            user[message.chat.id].distance_max, user[message.chat.id].distance_min = user[message.chat.id].distance_min, \
+                                                                                     user[message.chat.id].distance_max
         # bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
-        query_str = user[message.chat.id].query_string()
-        hotel_query(query_str, message)
+
     except Exception as er:
-        logging.error(
-            f"{datetime.datetime.now()} - {er} - Функция distance_min_max - Ошибка ввода мин- макс. расстояния")
+        logging.error(f"{datetime.now()} - {er} - Функция distance_min_max - Ошибка ввода мин- макс. расстояния")
         msg = bot.send_message(text='Ошибка ввода. Пожалуйста введите через пробел числа.',
                                chat_id=message.chat.id)
         bot.register_next_step_handler(msg, distance_min_max)
+
+    query_str = user[message.chat.id].query_string()
+    hotel_query(query_str, message)
 
 
 def ask_show_photo(message: types.Message):
@@ -336,20 +269,20 @@ def req_api(url: str, querystring: dict, lng="en_US") -> Any:
         else:
             if json.loads(response.text).get("message"):
                 logging.error(
-                    f"{datetime.datetime.now()} - Функция req_api - Превышена ежемесячная квота для запросов по плану BASIC.")
+                    f"{datetime.now()} - Функция req_api - Превышена ежемесячная квота для запросов по плану BASIC.")
                 return json.loads(response.text)
             else:
-                logging.error(f"{datetime.datetime.now()} - Функция req_api - Что-то пошло не так. Повторите позже.")
+                logging.error(f"{datetime.now()} - Функция req_api - Что-то пошло не так. Повторите позже.")
                 return server_error[lng]["erhttp"]
     except ConnectionError as ercon:
-        logging.error(f"{datetime.datetime.now()} - {ercon} - Функция req_api - Нет, соединения с сервисом.")
+        logging.error(f"{datetime.now()} - {ercon} - Функция req_api - Нет, соединения с сервисом.")
         return server_error[lng]["ercon"]
     except TimeoutError as ertime:
-        logging.error(f"{datetime.datetime.now()} - {ertime} - Функция req_api - Время ожидания запроса истекло")
+        logging.error(f"{datetime.now()} - {ertime} - Функция req_api - Время ожидания запроса истекло")
         return server_error[lng]["ertime"]
     except json.decoder.JSONDecodeError as erjson:
         logging.error(
-            f"{datetime.datetime.now()} - {erjson} - Функция req_api - Получен некорректный ответ от сервиса.")
+            f"{datetime.now()} - {erjson} - Функция req_api - Получен некорректный ответ от сервиса.")
         return server_error[lng]["erjson"]
 
 
@@ -385,11 +318,11 @@ def get_city_id(querystring: dict, message: types.Message) -> bool:
             markup = types.InlineKeyboardMarkup()
             for city in result_id_city['suggestions']:
                 for name in city['entities']:
-                    parse_city = (BeautifulSoup(name['caption'], 'html.parser').get_text()).lower()
+                    parse_city = city_parse(name['caption']).title()
                     if name['type'] == 'CITY':
                         # Добавить для точного совпадения города: parse_city.startswith(search_city) and
                         # and name['name'].lower() == search_city
-                        markup.add(types.InlineKeyboardButton(parse_city.title(),
+                        markup.add(types.InlineKeyboardButton(parse_city,
                                                               callback_data='cbid_' + str(name['destinationId'])))
             markup.add(types.InlineKeyboardButton(l_txt[0],
                                                   callback_data='Cancel_process'))
@@ -421,42 +354,25 @@ def hotel_query(querystring: dict, message: types.Message):
     url_low = config('URL_LOW')
     loc = querystring["locale"]
     data = req_api(url_low, querystring, loc)
-    print(data)
-
     links_htmls = ("https://ru.hotels.com/ho{}" if loc[:2] == "ru"
                    else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
+
     if data:
         if user[message.chat.id].command == '/bestdeal':
             if user[message.chat.id].language == 'ru_RU':
-                f = [d for d in data['data']['body']['searchResults']['results']]
-                print(f)
                 low_data = [d for d in data['data']['body']['searchResults']['results']
                             if user[message.chat.id].distance_min <= float(
-                        d['landmarks'][0]['distance'].split(' ')[0].replace(',', '.')) <= user[
+                        d['landmarks'][0]['distance'].split()[0].replace(',', '.')) <= user[
                                 message.chat.id].distance_max]
             else:
-                #'fullyBundledPricePerStay' поле которое считает сумму за все дни
-
                 low_data = [d for d in data['data']['body']['searchResults']['results']
                             if user[message.chat.id].distance_min <= float(
-                        d['landmarks'][0]['distance'].split(' ')[0]) <= user[message.chat.id].distance_max]
+                        d['landmarks'][0]['distance'].split()[0]) <= user[message.chat.id].distance_max]
         else:
             low_data = [d for d in data['data']['body']['searchResults']['results']]
 
         for hotel_count, results in enumerate(low_data):
-            difdate = diff_date(user[message.chat.id].checkIn, user[message.chat.id].checkOut)
-            if results['ratePlan']['price']['exactCurrent']:
-                if user[message.chat.id].language == 'ru_RU':
-                    price_period = float(results["ratePlan"]["price"]["exactCurrent"])
-                    price_per_day = round(price_period / float(difdate), 2)
-                else:
-                    price_per_day = float(results["ratePlan"]["price"]["exactCurrent"])
-                    price_period = round(price_per_day * difdate, 2)
-            else:
-                price_per_day = loc_txt[loc][11]
-                price_period = loc_txt[loc][11]
-
-            hotels = results
+            price = price_parse(results["ratePlan"], user[message.chat.id].language, logging, datetime)
             if querystring["pageSize"] != hotel_count:
                 txt = f"<strong>⭐⭐⭐{loc_txt[loc][0]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐⭐⭐</strong>\n" \
                       f"🏨 {loc_txt[loc][1]} {results['name']}\n" \
@@ -464,19 +380,19 @@ def hotel_query(querystring: dict, message: types.Message):
                       f"{(results['address'].get('streetAddress') if results['address'].get('streetAddress') else loc_txt[loc][10])}\n" \
                       f"🚗 {loc_txt[loc][3]} {results['landmarks'][0]['distance']}\n" \
                       f"📅 {loc_txt[loc][4]} {querystring['checkIn']} - {querystring['checkOut']}\n" \
-                      f"💵 {loc_txt[loc][5]} <b>{price_per_day}</b>\n" \
-                      f"💵 {loc_txt[loc][6].format(difdate)} <b>{price_period}</b>\n" \
-                      f"🌍 {loc_txt[loc][7]}" + f"{links_htmls.format(results['id'])}\n\n"
+                      f"💵 {loc_txt[loc][5]} <b>{price['price_day']}</b>\n" \
+                      f"💵 {loc_txt[loc][6].format(price['day'])} <b>{price['price_total']}</b>\n" \
+                      f"🌍 {loc_txt[loc][7]} {links_htmls.format(results['id'])}\n\n"
 
                 if user[message.chat.id].status_show_photo:
-                    data_photo = get_photos(hotels['id'])
+                    data_photo = get_photos(results['id'])
 
                     photo_lst = [types.InputMediaPhoto(media=link) for index, link in enumerate(data_photo) if
                                  user[message.chat.id].count_show_photo > index]
                     try:
                         bot.send_media_group(chat_id=message.chat.id, media=photo_lst)
                     except Exception as er:
-                        logging.error(f"{datetime.datetime.now()} - {er} - Функция hotel_query - Отправка фото")
+                        logging.error(f"{datetime.now()} - {er} - Функция hotel_query - Отправка фото")
 
                     user[message.chat.id].all_hotels[txt] = photo_lst
                     photo_lst.clear()
@@ -488,7 +404,7 @@ def hotel_query(querystring: dict, message: types.Message):
                                      parse_mode="HTML")
 
                 except Exception as e:
-                    logging.error(f"{datetime.datetime.now()} - {e} - Функция hotel_query - Отправка гостиниц")
+                    logging.error(f"{datetime.now()} - {e} - Функция hotel_query - Отправка гостиниц")
                 txt = ''
         user[message.chat.id].insert_db(logging, datetime)
         bot.send_message(chat_id=message.chat.id, text=loc_txt[loc][8].format(len(user[message.chat.id].all_hotels)))
@@ -502,6 +418,8 @@ def hotel_query(querystring: dict, message: types.Message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def inline(call):
+    """Обработчик call инлайн клавиатуры
+    """
     if call.data in ['yes_photo', 'no_photo']:
         user[call.message.chat.id].status_show_photo = (True if call.data == 'yes_photo' else False)
 
@@ -543,7 +461,6 @@ def inline(call):
         ask_show_photo(call.message)
         bot.answer_callback_query(callback_query_id=call.id)
 
-
     elif call.data in ["one_photo", "two_photo", "three_photo", "four_photo", "five_photo"]:
         numbers_photo = {"one_photo": 1, "two_photo": 2, "three_photo": 3, "four_photo": 4, "five_photo": 5}
         user[call.message.chat.id].count_show_photo = numbers_photo[call.data]
@@ -578,7 +495,7 @@ def inline(call):
 if __name__ == '__main__':
     while True:
         try:
-            logging.error(f"{datetime.datetime.now()} - Бот запущен")
+            logging.error(f"{datetime.now()} - Бот запущен")
             bot.polling(none_stop=True, interval=0)
         except Exception as ex:
-            logging.error(f"{datetime.datetime.now()} - {ex} - Модуль main")
+            logging.error(f"{datetime.now()} - {ex} - Модуль main")
