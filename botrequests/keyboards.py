@@ -8,17 +8,17 @@ class Keyboard:
     """ Класс инлайн кнопок и метод my_commands
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__markup: types.InlineKeyboardMarkup = types.InlineKeyboardMarkup()
 
-    def set_lang(self):
+    def set_lang(self) -> types.InlineKeyboardMarkup:
         """ Функция инлайн кнопок с выбора языка?
         """
         self.__markup.add(types.InlineKeyboardButton(text='✅Russian', callback_data='ru_RU'),
                           types.InlineKeyboardButton(text='✅English', callback_data='en_US'))
         return self.__markup
 
-    def hotel_numb(self, lang) -> types.InlineKeyboardMarkup:
+    def hotel_numb(self, lang: str) -> types.InlineKeyboardMarkup:
         """ Функция инлайн кнопок для выводы количества гостиниц
         """
         self.__markup.row_width = 5
@@ -31,7 +31,7 @@ class Keyboard:
         self.__markup.add(types.InlineKeyboardButton(text=loc[lang][0], callback_data='Cancel_process'))
         return self.__markup
 
-    def photo_yes_no(self, lang) -> types.InlineKeyboardMarkup:
+    def photo_yes_no(self, lang: str) -> types.InlineKeyboardMarkup:
         """ Функция инлайн кнопок с вопросом будем ли искать фото?
         """
         self.__markup.add(types.InlineKeyboardButton(text='✅' + hotel_kbd[lang][0], callback_data='yes_photo'),
@@ -39,7 +39,7 @@ class Keyboard:
                           types.InlineKeyboardButton(text=loc[lang][0], callback_data='Cancel_process'))
         return self.__markup
 
-    def photo_numb(self, lang) -> types.InlineKeyboardMarkup:
+    def photo_numb(self, lang: str) -> types.InlineKeyboardMarkup:
         """ Функция инлайн кнопок для выбора количества выводимых фото
         """
         self.__markup.row_width = 5
@@ -53,7 +53,7 @@ class Keyboard:
         return self.__markup
 
     @classmethod
-    def my_commands(cls, lng) -> [types.BotCommand]:
+    def my_commands(cls, lng: str) -> [types.BotCommand]:
         """ Функция возвращает каманды на языке пользователя
         """
 

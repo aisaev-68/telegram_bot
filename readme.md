@@ -17,7 +17,7 @@
     Python 3.9+
 
 ### Libraries:
-        Package                      Version
+        Package                  Version
     ---------------------------- ---------
     beautifulsoup4               4.10.0
     certifi                      2021.10.8

@@ -7,13 +7,13 @@ from sqlite3 import Error
 
 class Users:
     """
-    Класс пользователя, с параметрами необходимыми для формирования запроса.
+    Класс пользователя, для хранения промежуточной информации.
         Args: user: объект вх. сообщения от пользователя
     """
 
-    def __init__(self, mess) -> None:
-        self.__username: str = mess.from_user.username
-        self.__id_user: int = mess.from_user.id
+    def __init__(self, message) -> None:
+        self.__username: str = message.from_user.username
+        self.__id_user: int = message.from_user.id
         self.__search_city: str = ''
         self.__command: str = ''
         self.__id_city: str = ''
@@ -156,7 +156,7 @@ class Users:
         return self.__status_show_photo
 
     @status_show_photo.setter
-    def status_show_photo(self, status: bool):
+    def status_show_photo(self, status: bool) -> None:
         self.__status_show_photo = status
 
     def query_string(self, idcity: str =None) -> dict:
@@ -212,7 +212,7 @@ class Users:
             }
         return querystring
 
-    def clearCache(self):
+    def clearCache(self) -> None:
         """Функция для очистки не нужных данных при формировании нового запроса"""
 
         self.__search_city: str = ''

@@ -31,7 +31,7 @@ class MyStyleCalendar(WYearTelegramCalendar):
 
 
 @bot.message_handler(commands=["help", "start"])
-def help_start_message(message: types.Message):
+def help_start_message(message: types.Message) -> None:
     """Функция для обработки команд "help", "start"
     """
     if not user.get(message.from_user.id):
@@ -44,7 +44,7 @@ def help_start_message(message: types.Message):
 
 
 @bot.message_handler(commands=["lowprice", "highprice", "bestdeal"])
-def command_message(message: types.Message):
+def command_message(message: types.Message) -> None:
     """Функция для обработки команд "lowprice", "highprice", "bestdeal"
     """
     if not user.get(message.from_user.id):
@@ -60,7 +60,7 @@ def command_message(message: types.Message):
 
 
 @bot.message_handler(commands=["history"])
-def history_message(message: types.Message):
+def history_message(message: types.Message) -> None:
     """Функция для обработки команды вывода истории
     """
     if not user.get(message.from_user.id):
@@ -75,7 +75,7 @@ def history_message(message: types.Message):
 
 
 @bot.message_handler(content_types=['text'])
-def get_text_messages(message: types.Message):
+def get_text_messages(message: types.Message) -> None:
     """Функция слушает все входящие сообщения и если
     не знакомы выдает сообщения и строку помощи
     """
@@ -87,7 +87,7 @@ def get_text_messages(message: types.Message):
                      chat_id=message.from_user.id)
 
 
-def ask_search_city(message: types.Message):
+def ask_search_city(message: types.Message) -> None:
     """
     Функция готовит данные для запроса городов и вызывает функцию get_city_id()
     для вывода в чат городов
@@ -114,7 +114,7 @@ def ask_search_city(message: types.Message):
         bot.register_next_step_handler(m, ask_search_city)
 
 
-def ask_date(message: types.Message, txt):
+def ask_date(message: types.Message, txt: str) -> None:
     """Функция предлагает ввести дату
     """
     lng = user[message.chat.id].language
@@ -125,7 +125,7 @@ def ask_date(message: types.Message, txt):
                                                        locale=lng[:2]).build()[0])
 
 
-def ask_count_hotels(message: types.Message):
+def ask_count_hotels(message: types.Message) -> None:
     """Функция предлагает указать количество отелей, которые необходимо вывести
     :param message: входящее сообщение от пользователя
     """
@@ -136,7 +136,7 @@ def ask_count_hotels(message: types.Message):
                           reply_markup=Keyboard().hotel_numb(user[message.chat.id].language))
 
 
-def price_min_max(message):
+def price_min_max(message: types.Message) -> None:
     """Функция предлагает ввести через пробел диапазон диапазон цен, если все введено корректно
     вызывает функцию distance_min_max
     :param message: входящее сообщение от пользователя
@@ -159,7 +159,7 @@ def price_min_max(message):
         bot.register_next_step_handler(msg, price_min_max)
 
 
-def distance_min_max(message):
+def distance_min_max(message: types.Message) -> None:
     """Функция предлагает ввести через пробел диапазон расстояния до центра, если все введено корректно
     вызывает функцию hotel_query вывода гостиниц в чат
     :param message: входящее сообщение от пользователя
@@ -195,7 +195,7 @@ def ask_show_photo(message: types.Message):
                           reply_markup=Keyboard().photo_yes_no(user[message.chat.id].language))
 
 
-def ask_count_photo(message: types.Message):
+def ask_count_photo(message: types.Message) -> None:
     """
     Функция прелагает выбрать количество фото для загрузки
     :param message: объект входящего сообщения от пользователя
@@ -205,7 +205,7 @@ def ask_count_photo(message: types.Message):
                           reply_markup=Keyboard().photo_numb(user[message.chat.id].language))
 
 
-def step_show_info(message: types.Message):
+def step_show_info(message: types.Message) -> None:
     """
     Функция для вызова функции hotel_query вывода информации в чат. В случае если выбрана команда /bestdeal
     вызывается функция price_min_max
@@ -218,12 +218,11 @@ def step_show_info(message: types.Message):
 
         bot.register_next_step_handler(message, price_min_max)
     else:
-
         query_str = user[message.chat.id].query_string()
         hotel_query(query_str, message)
 
 
-def history(message: types.Message):
+def history(message: types.Message) -> None:
     """
     Функция вывода трех последних запросов в чат.
     :param message: объект входящего сообщения от пользователя
@@ -235,7 +234,6 @@ def history(message: types.Message):
     bot.set_my_commands(commands=Keyboard().my_commands(user[message.chat.id].language),
                         scope=types.BotCommandScopeChat(message.chat.id))
     history = user[message.chat.id].history(logging, datetime)
-    txt = loctxt[user[message.chat.id].language][11]
     if len(history) == 0:
         txt = loctxt[user[message.chat.id].language][12]
         bot.send_message(chat_id=message.chat.id, text=txt)
@@ -306,11 +304,12 @@ def get_photos(id_photo: str) -> list:
 def get_city_id(querystring: dict, message: types.Message) -> bool:
     """
     Функция выводит в чат города.
+    :param querystring: строка запроса в виде словаря {'query': 'минск', 'locale': 'ru_RU'}
     :param message: сообщение
     """
     lang = user[message.chat.id].language
     l_txt = loc[lang]
-    search_city = querystring["query"]
+    #search_city = querystring["query"]
     result_id_city = req_api(config('URL'), querystring, lang)
 
     if isinstance(result_id_city, dict) and not result_id_city.get("message"):
@@ -346,7 +345,8 @@ def hotel_query(querystring: dict, message: types.Message):
     """
     Формирует словарь отелей на основе запроса пользователя и сортировкой по цене.
     Если отелей не найдено возвращает пустой словарь.
-    :param querystring: строка запроса
+    :param querystring: строка запроса в виде словаря
+    :param message: сообщение
     :return result_low: возвращает словарь (название отеля, адрес,
     фотографии отеля (если пользователь счёл необходимым их вывод)
     """
@@ -488,8 +488,6 @@ def inline(call):
                               message_id=user[call.message.chat.id].message_id)
         bot.answer_callback_query(callback_query_id=call.id)
 
-    else:
-        bot.answer_callback_query(callback_query_id=call.id)
 
 
 if __name__ == '__main__':
