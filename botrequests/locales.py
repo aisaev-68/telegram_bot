@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 l_text = {'ru_RU': ['В каком городе будем искать?', 'Будет выведена информация о трех последних запросах',
                     'Извините, данная команда мне неизвестна.\n'],
           'en_US': ['What city are we looking for?', 'Information about the last three requests will be displayed',
@@ -18,7 +19,6 @@ info_help = {'ru_RU':
                  '● /history - hotel search history display'
              }
 
-
 loctxt = {'ru_RU':
               ['Ищем...', 'Такой город не найден. Повторите поиск.', 'В каком городе будем искать?',
                'Выберите дату *заезда*:', 'Выберите дату *выезда*:',
@@ -27,7 +27,11 @@ loctxt = {'ru_RU':
                'Дата заезда выбрана.', 'Дата выезда выбрана.',
                'Дата выезда должна быть больше даты въезда.Повторите ввод.', 'История запросов:\n',
                'Ваша история пуста.',
-               'Команда:', 'Дата запросов:', 'Команда выполнена.', 'Вы отменили данную операцию'
+               'Команда:', 'Дата запросов:', 'Команда выполнена.', 'Вы отменили данную операцию',
+               'Укажите через пробел диапазон цен в рублях.', 'Ошибка ввода. Пожалуйста введите через пробел числа.',
+               'Вы перепутали расстояния местами, я исправил.',
+               'Укажите через пробел диапазон расстояния до центра в км.',
+               'Вы перепутали цены местами, я исправил.'
                ],
           'en_US':
               ['Are looking for...', 'No such city has been found. Repeat the search.',
@@ -38,7 +42,11 @@ loctxt = {'ru_RU':
                ' Check-in date selected. ', ' Check-out date selected.',
                'The check-out date must be greater than the check-in date. Please re-enter.',
                'Request history:\n', 'Your story is empty.', 'Command:', 'Date of requests:',
-               'Command completed.', 'You canceled this operation'
+               'Command completed.', 'You canceled this operation', 'Specify via the range of price range in dollars.',
+               'Input Error. Please enter through the number of numbers.',
+               'You confused the distance in places, I corrected.',
+               'Specify via the range of the distance to the center in miles',
+               'You confused prices in some places, I corrected.'
                ]
           }
 commands = ["/lowprice", "/highprice", "/bestdeal"]
@@ -54,19 +62,19 @@ loc_txt = {'ru_RU':
            }
 
 server_error = {"ru_RU": {"ertime": "Время ожидания запроса истекло. Попробуйте позже.",
-                              "erjson": "Получен некорректный ответ от сервиса. Попробуйте позже.",
-                              "ercon": "Нет, соединения с сервисом. Попробуйте позже.",
-                              "erhttp": "Что-то пошло не так. Повторите позже."},
-                    "en_US": {"ertime": "The request timed out. Please try again later.",
-                              "erjson": "Received an invalid response from the service. Please try again later.",
-                              "ercon": "No, connecting to the service. Please try again later.",
-                              "erhttp": "Something went wrong. Please try again later."}}
+                          "erjson": "Получен некорректный ответ от сервиса. Попробуйте позже.",
+                          "ercon": "Нет, соединения с сервисом. Попробуйте позже.",
+                          "erhttp": "Что-то пошло не так. Повторите позже."},
+                "en_US": {"ertime": "The request timed out. Please try again later.",
+                          "erjson": "Received an invalid response from the service. Please try again later.",
+                          "ercon": "No, connecting to the service. Please try again later.",
+                          "erhttp": "Something went wrong. Please try again later."}}
 
 loc = {'ru_RU':
-               ['Отмена', 'Пожалуйста, уточните город', 'Превышена ежемесячная квота для запросов по плану BASIC.'],
-           'en_US':
-               ['Cancel', 'Please specify city', 'Monthly quota exceeded for BASIC plan requests.']
-           }
+           ['Отмена', 'Пожалуйста, уточните город', 'Превышена ежемесячная квота для запросов по плану BASIC.'],
+       'en_US':
+           ['Cancel', 'Please specify city', 'Monthly quota exceeded for BASIC plan requests.']
+       }
 
 hotel_kbd = {'ru_RU': ['Да', 'Нет'], 'en_US': ['Yes', 'No']}
 

@@ -21,8 +21,11 @@ def price_parse(line_text: dict, lang: str, logging, datetime) -> dict:
     else:
         try:
             day = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[3]
-            price_total = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][1:]
-            price_day = round(price_total / int(day), 2)
+            price_total = \
+            BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][
+            1:].replace(',', '')
+            print(BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser'))
+            price_day = round(float(price_total) / float(day), 2)
             return {'day': day, 'price_total': price_total, 'price_day': price_day}
         except Exception as er:
             logging.error(f"{datetime.now()} - {er} - Функция price_parse (английски язык)")

@@ -19,7 +19,7 @@ bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
 logging.basicConfig(filename="logger.log", level=logging.INFO)
 
-user = {}
+user: dict = {}
 
 
 class MyStyleCalendar(WYearTelegramCalendar):
@@ -144,17 +144,17 @@ def price_min_max(message: types.Message) -> None:
     try:
         price_max, price_min = int(message.text.split()[1]), int(message.text.split()[0])
         if price_min > price_max:
-            bot.send_message(text='Вы перепутали цены местами, я исправил.',
+            bot.send_message(text=loctxt[user[message.chat.id].language][21],
                              chat_id=message.chat.id)
             price_min, price_max = price_max, price_min
         user[message.chat.id].price_min = price_min
         user[message.chat.id].price_max = price_max
-        m = bot.send_message(text='Укажите через пробел диапазон расстояния до центра в км.',
+        m = bot.send_message(text=loctxt[user[message.chat.id].language][20],
                              chat_id=message.chat.id)
         bot.register_next_step_handler(m, distance_min_max)
     except Exception as er:
         logging.error(f"{datetime.now()} - {er} - Функция price_min_max - Ошибка ввода мин- макс. цены")
-        msg = bot.send_message(text='Ошибка ввода. Пожалуйста повторите ввод.',
+        msg = bot.send_message(text=loctxt[user[message.chat.id].language][18],
                                chat_id=message.chat.id)
         bot.register_next_step_handler(msg, price_min_max)
 
@@ -170,7 +170,7 @@ def distance_min_max(message: types.Message) -> None:
         user[message.chat.id].distance_max, user[message.chat.id].distance_min = float(message.text.split()[1]), \
                                                                                  float(message.text.split()[0])
         if user[message.chat.id].distance_min > user[message.chat.id].distance_max:
-            bot.send_message(text='Вы перепутали расстояния местами, я исправил.',
+            bot.send_message(text=loctxt[user[message.chat.id].language][19],
                              chat_id=message.chat.id)
             user[message.chat.id].distance_max, user[message.chat.id].distance_min = user[message.chat.id].distance_min, \
                                                                                      user[message.chat.id].distance_max
@@ -178,10 +178,10 @@ def distance_min_max(message: types.Message) -> None:
 
     except Exception as er:
         logging.error(f"{datetime.now()} - {er} - Функция distance_min_max - Ошибка ввода мин- макс. расстояния")
-        msg = bot.send_message(text='Ошибка ввода. Пожалуйста введите через пробел числа.',
+        msg = bot.send_message(text=loctxt[user[message.chat.id].language][18],
                                chat_id=message.chat.id)
         bot.register_next_step_handler(msg, distance_min_max)
-
+    bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][0])
     query_str = user[message.chat.id].query_string()
     hotel_query(query_str, message)
 
@@ -214,7 +214,7 @@ def step_show_info(message: types.Message) -> None:
     command = user[message.chat.id].command
     bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
     if command == '/bestdeal':
-        bot.send_message(chat_id=message.chat.id, text='Укажите через пробел диапазон цен в рублях.')
+        bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][17])
 
         bot.register_next_step_handler(message, price_min_max)
     else:
@@ -309,18 +309,16 @@ def get_city_id(querystring: dict, message: types.Message) -> bool:
     """
     lang = user[message.chat.id].language
     l_txt = loc[lang]
-    #search_city = querystring["query"]
+    # search_city = querystring["query"]
     result_id_city = req_api(config('URL'), querystring, lang)
 
     if isinstance(result_id_city, dict) and not result_id_city.get("message"):
         if len(result_id_city) > 0:
             markup = types.InlineKeyboardMarkup()
             for city in result_id_city['suggestions']:
-                for name in city['entities']:
-                    parse_city = city_parse(name['caption']).title()
-                    if name['type'] == 'CITY':
-                        # Добавить для точного совпадения города: parse_city.startswith(search_city) and
-                        # and name['name'].lower() == search_city
+                if city['group'] == 'CITY_GROUP':
+                    for name in city['entities']:
+                        parse_city = city_parse(name['caption']).title()
                         markup.add(types.InlineKeyboardButton(parse_city,
                                                               callback_data='cbid_' + str(name['destinationId'])))
             markup.add(types.InlineKeyboardButton(l_txt[0],
@@ -370,7 +368,6 @@ def hotel_query(querystring: dict, message: types.Message):
                         d['landmarks'][0]['distance'].split()[0]) <= user[message.chat.id].distance_max]
         else:
             low_data = [d for d in data['data']['body']['searchResults']['results']]
-
         for hotel_count, results in enumerate(low_data):
             price = price_parse(results["ratePlan"], user[message.chat.id].language, logging, datetime)
             if querystring["pageSize"] != hotel_count:
@@ -487,7 +484,6 @@ def inline(call):
         bot.edit_message_text(text=loctxt[user[call.message.chat.id].language][16], chat_id=call.message.chat.id,
                               message_id=user[call.message.chat.id].message_id)
         bot.answer_callback_query(callback_query_id=call.id)
-
 
 
 if __name__ == '__main__':

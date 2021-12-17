@@ -159,7 +159,7 @@ class Users:
     def status_show_photo(self, status: bool) -> None:
         self.__status_show_photo = status
 
-    def query_string(self, idcity: str =None) -> dict:
+    def query_string(self, idcity: str = None) -> dict:
         """Функция формирует строку запроса в виде словаря
         :param idcity: команды для формирования строки запроса по поиску ID города
         возвращает строку запроса к API в виде словаря
