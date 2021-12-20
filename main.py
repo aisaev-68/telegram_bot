@@ -91,13 +91,22 @@ def ask_search_city(message: types.Message) -> None:
     user[message.from_user.id].message_id = msg.message_id
 
     query_str = user[message.from_user.id].query_string('city')
-    if not get_city_id(query_str, message):
+    city = get_city_id(query_str)
+    if city.get('markup'):
+        bot.edit_message_text(text=city['txt'], chat_id=message.chat.id,
+                              message_id=user[message.chat.id].message_id,
+                              parse_mode='HTML', reply_markup=city['markup'])
+    elif city.get('quota'):
+        bot.edit_message_text(text=city['quota'], chat_id=message.chat.id)
+    elif city.get('empty'):
         command = user[message.from_user.id].command
         user[message.chat.id].clearCache()
         user[message.chat.id].command = command
         bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][1])
         m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
         bot.register_next_step_handler(m, ask_search_city)
+    elif city.get('serv_message'):
+        bot.send_message(message.chat.id, city['serv_message'])
 
 
 def ask_date(message: types.Message, txt: str) -> None:

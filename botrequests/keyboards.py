@@ -39,7 +39,7 @@ class Keyboard:
                           types.InlineKeyboardButton(text='20', callback_data='twenty'),
                           types.InlineKeyboardButton(text='25', callback_data='twenty_five'))
         self.__markup.row_width = 1
-        self.__markup.add(types.InlineKeyboardButton(text=loc[lang][0], callback_data='Cancel_process'))
+        self.__markup.add(types.InlineKeyboardButton(text=hotel_kbd[lang][2], callback_data='Cancel_process'))
         return self.__markup
 
     def photo_yes_no(self, lang: str) -> types.InlineKeyboardMarkup:

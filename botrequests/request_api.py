@@ -2,7 +2,7 @@ from decouple import config
 import json
 from telebot import TeleBot, util
 from keyboards import types, Keyboard
-import requests
+from requests import request
 from datetime import datetime
 import logging
 from typing import Any
@@ -91,7 +91,8 @@ def req_api(url: str, querystring: dict, lng="en_US") -> Any:
         'x-rapidapi-key': config('RAPID_API_KEY')
     }
     try:
-        response = requests.request("GET", url, headers=headers, params=querystring)
+
+        response = request("GET", url, headers=headers, params=querystring)
         if response.status_code == 200:
             data = json.loads(response.text)
             return data
@@ -132,15 +133,14 @@ def get_photos(id_photo: str) -> list:
     return photo_list
 
 
-def get_city_id(querystring: dict, message: types.Message) -> bool:
+def get_city_id(querystring: dict) -> Any:
     """
     Функция выводит в чат города.
     :param querystring: строка запроса в виде словаря {'query': 'минск', 'locale': 'ru_RU'}
     :param message: сообщение
     """
-    lang = user[message.chat.id].language
+    lang = querystring['locale']
     l_txt = loc[lang]
-    # search_city = querystring["query"]
     result_id_city = req_api(config('URL'), querystring, lang)
 
     if isinstance(result_id_city, dict) and not result_id_city.get("message"):
@@ -152,22 +152,14 @@ def get_city_id(querystring: dict, message: types.Message) -> bool:
                         parse_city = city_parse(name['caption']).title()
                         markup.add(types.InlineKeyboardButton(parse_city,
                                                               callback_data='cbid_' + str(name['destinationId'])))
-            markup.add(types.InlineKeyboardButton(l_txt[0],
-                                                  callback_data='Cancel_process'))
-            bot.edit_message_text(text=l_txt[1], chat_id=message.chat.id,
-                                  message_id=user[message.chat.id].message_id,
-                                  parse_mode='HTML', reply_markup=markup)
-            return True
+            return {'markup': markup.add(types.InlineKeyboardButton(l_txt[0], callback_data='Cancel_process')), 'txt': l_txt[1]}
         else:
-            return False
+            return {'empty': None}
     elif result_id_city.get("message"):
-        bot.edit_message_text(text=l_txt[2],
-                              chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
-        return True
+        return {'quota': l_txt[2]}
 
     else:
-        bot.send_message(message.chat.id, result_id_city)
-        return True
+        return {'serv_message': result_id_city}
 
 
 def hotel_query(querystring: dict, message: types.Message):
