@@ -28,7 +28,6 @@ class Users:
         self.__distance_min: float = 0.0
         self.__language: str = ''
         self.__currency: str = ''
-        self.__all_hotels: dict = dict()
         self.__message_id: str = ''
 
     @property
@@ -144,14 +143,6 @@ class Users:
         self.__currency = curr
 
     @property
-    def all_hotels(self) -> dict:
-        return self.__all_hotels
-
-    @all_hotels.setter
-    def all_hotels(self, hotel_dict: dict) -> None:
-        self.__all_hotels = hotel_dict
-
-    @property
     def status_show_photo(self) -> bool:
         return self.__status_show_photo
 
@@ -227,10 +218,9 @@ class Users:
         self.__distance_min: float = 0.0
         self.__distance_max: float = 0.0
         self.__currency: str = ''
-        self.__all_hotels: dict = dict()
         self.__message_id: str = ''
 
-    def insert_db(self, logging, datetime) -> None:
+    def insert_db(self, all_hotels, logging, datetime) -> None:
         """Функция вставки данных (ID пользователя, имени, команды,
         даты запроса, списка найденных гостиниц без фото) в базу данных
         """
@@ -244,7 +234,7 @@ class Users:
                     "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, name TEXT, "
                     "command TEXT, date TEXT, hotels TEXT);")
             txt = ''
-            for item in list(self.__all_hotels.keys()):
+            for item in list(all_hotels.keys()):
                 txt += item
             with con:
                 con.execute("INSERT INTO users (user_id, name, command, date, hotels) VALUES(?, ?, ?, ?, ?);",

@@ -229,6 +229,7 @@ def send_hotels_chat(message):
                                  parse_mode="HTML")
             except Exception as e:
                 logging.error(f"{datetime.now()} - {e} - Функция send_hotels_chat - Отправка гостиниц")
+        user[message.chat.id].insert_db(data, logging, datetime)
         bot.send_message(chat_id=message.chat.id, text=loc_txt[lang][8].format(len(data)))
     else:
         bot.send_message(chat_id=message.chat.id, text=data["error"],
