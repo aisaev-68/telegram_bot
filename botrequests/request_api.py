@@ -17,32 +17,29 @@ user: dict = {}
 server_error = {"ru_RU": {"ertime": "Время ожидания запроса истекло. Попробуйте позже.",
                           "erjson": "Получен некорректный ответ от сервиса. Попробуйте позже.",
                           "ercon": "Нет, соединения с сервисом. Попробуйте позже.",
-                          "erhttp": "Что-то пошло не так. Повторите позже."},
+                          "erhttp": "Что-то пошло не так. Повторите позже.",
+                          "quota": 'Превышена ежемесячная квота для запросов по плану BASIC.'},
                 "en_US": {"ertime": "The request timed out. Please try again later.",
                           "erjson": "Received an invalid response from the service. Please try again later.",
                           "ercon": "No, connecting to the service. Please try again later.",
-                          "erhttp": "Something went wrong. Please try again later."}}
+                          "erhttp": "Something went wrong. Please try again later.",
+                          "quota": 'Monthly quota exceeded for BASIC plan requests.'}}
 
-loc = {'ru_RU':
-           ['Отмена', 'Пожалуйста, уточните город', 'Превышена ежемесячная квота для запросов по плану BASIC.',
-            'Ваша история пуста.', 'Команда выполнена.'],
-       'en_US':
-           ['Cancel', 'Please specify city', 'Monthly quota exceeded for BASIC plan requests.',
-            'Your history is empty.', 'Command completed.']
-       }
 
 loc_txt = {'ru_RU':
-               ['Рейтинг: ', 'Отель: ', 'Адрес: ', 'От центра города:', 'Дата заезда-выезда: ',
+               ['Отмена', 'Ваша история пуста.', 'Команда выполнена.',
+                'Рейтинг: ', 'Отель: ', 'Адрес: ', 'От центра города:', 'Дата заезда-выезда: ',
                 'Цена за сутки (в руб): ', 'Цена за {} сутки (в руб): ', 'Ссылка на страницу: ',
-                'Найдено {} отелей', 'Нет данных об адресе.', 'Нет данных о расценках.'],
+                'Нет данных об адресе.', 'Нет данных о расценках.'],
            'en_US':
-               ['Rating: ', 'Hotel: ', 'Address: ', 'From the city center: ', 'Check-in (check-out) date: ',
+               ['Cancel', 'Your history is empty.', 'Command completed.',
+                'Rating: ', 'Hotel: ', 'Address: ', 'From the city center: ', 'Check-in (check-out) date: ',
                 'Price per day (USD): ', 'Price for {} day (USD): ', 'link to the page: ',
-                'Found {} hotels', 'No address data.', 'No price data.']
+                'No address data.', 'No price data.']
            }
 
 
-def price_parse(line_text: dict, lang: str, logging, datetime) -> dict:
+def price_parse(line_text: dict, lang: str) -> dict:
     """Функция возвращает из полученной строки кол-во дней, общаую сумму и цену за сутки в виде словаря
     {'day': day, 'price_total': price_total, 'price_day': price_day}
     :param line_text: строка для парсинга
@@ -77,7 +74,7 @@ def city_parse(line_text: str) -> str:
     return BeautifulSoup(line_text, 'html.parser').get_text().lower()
 
 
-def req_api(url: str, querystring: dict, lng="en_US") -> Any:
+def req_api(url: str, querystring: dict, lang="en_US") -> Any:
     """
     Функция возвращает данные запроса к API гостиниц.
     :param url: страница поиска
@@ -95,25 +92,25 @@ def req_api(url: str, querystring: dict, lng="en_US") -> Any:
         response = request("GET", url, headers=headers, params=querystring)
         if response.status_code == 200:
             data = json.loads(response.text)
-            return data
+            return {"ok": data}
         else:
             if json.loads(response.text).get("message"):
                 logging.error(
                     f"{datetime.now()} - Функция req_api - Превышена ежемесячная квота для запросов по плану BASIC.")
-                return json.loads(response.text)
+                return {"error": server_error[lang]["quota"]}
             else:
                 logging.error(f"{datetime.now()} - Функция req_api - Что-то пошло не так. Повторите позже.")
-                return server_error[lng]["erhttp"]
+                return {"error": server_error[lang]["erhttp"]}
     except ConnectionError as ercon:
         logging.error(f"{datetime.now()} - {ercon} - Функция req_api - Нет, соединения с сервисом.")
-        return server_error[lng]["ercon"]
+        return {"error": server_error[lang]["ercon"]}
     except TimeoutError as ertime:
         logging.error(f"{datetime.now()} - {ertime} - Функция req_api - Время ожидания запроса истекло")
-        return server_error[lng]["ertime"]
+        return {"error": server_error[lang]["ertime"]}
     except json.decoder.JSONDecodeError as erjson:
         logging.error(
             f"{datetime.now()} - {erjson} - Функция req_api - Получен некорректный ответ от сервиса.")
-        return server_error[lng]["erjson"]
+        return {"error": server_error[lang]["erjson"]}
 
 
 def get_photos(id_photo: str) -> list:
@@ -133,36 +130,32 @@ def get_photos(id_photo: str) -> list:
     return photo_list
 
 
-def get_city_id(querystring: dict) -> Any:
+def get_city_id(querystring: dict) -> dict:
     """
     Функция выводит в чат города.
     :param querystring: строка запроса в виде словаря {'query': 'минск', 'locale': 'ru_RU'}
     :param message: сообщение
     """
     lang = querystring['locale']
-    l_txt = loc[lang]
     result_id_city = req_api(config('URL'), querystring, lang)
 
-    if isinstance(result_id_city, dict) and not result_id_city.get("message"):
+    if result_id_city.get("ok"):
         if len(result_id_city) > 0:
             markup = types.InlineKeyboardMarkup()
-            for city in result_id_city['suggestions']:
+            for city in result_id_city["ok"]['suggestions']:
                 if city['group'] == 'CITY_GROUP':
                     for name in city['entities']:
                         parse_city = city_parse(name['caption']).title()
                         markup.add(types.InlineKeyboardButton(parse_city,
                                                               callback_data='cbid_' + str(name['destinationId'])))
-            return {'markup': markup.add(types.InlineKeyboardButton(l_txt[0], callback_data='Cancel_process')), 'txt': l_txt[1]}
+            return {"markup": markup.add(types.InlineKeyboardButton(loc[lang][0], callback_data='Cancel_process'))}
         else:
             return {'empty': None}
-    elif result_id_city.get("message"):
-        return {'quota': l_txt[2]}
-
     else:
-        return {'serv_message': result_id_city}
+        return result_id_city
 
 
-def hotel_query(querystring: dict, message: types.Message):
+def hotel_query(querystring: dict, message: types.Message) -> dict:
     """
     Формирует словарь отелей на основе запроса пользователя и сортировкой по цене.
     Если отелей не найдено возвращает пустой словарь.
@@ -178,21 +171,23 @@ def hotel_query(querystring: dict, message: types.Message):
     links_htmls = ("https://ru.hotels.com/ho{}" if lang == "ru_RU"
                    else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
 
-    if data:
+    if data["ok"]:
         if user[message.chat.id].command == '/bestdeal':
             if user[message.chat.id].language == 'ru_RU':
-                low_data = [d for d in data['data']['body']['searchResults']['results']
+                low_data = [d for d in data["ok"]['data']['body']['searchResults']['results']
                             if user[message.chat.id].distance_min <= float(
                         d['landmarks'][0]['distance'].split()[0].replace(',', '.')) <= user[
                                 message.chat.id].distance_max]
             else:
-                low_data = [d for d in data['data']['body']['searchResults']['results']
+                low_data = [d for d in data["ok"]['data']['body']['searchResults']['results']
                             if user[message.chat.id].distance_min <= float(
                         d['landmarks'][0]['distance'].split()[0]) <= user[message.chat.id].distance_max]
         else:
-            low_data = [d for d in data['data']['body']['searchResults']['results']]
+            low_data = [d for d in data["ok"]['data']['body']['searchResults']['results']]
+        all_hotels = {}
         for hotel_count, results in enumerate(low_data):
-            price = price_parse(results["ratePlan"], user[message.chat.id].language, logging, datetime)
+            txt = ''
+            price = price_parse(results["ratePlan"], user[message.chat.id].language)
             if querystring["pageSize"] != hotel_count:
                 txt = f"<strong>⭐⭐⭐{loc_txt[lang][0]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐⭐⭐</strong>\n" \
                       f"🏨 {loc_txt[lang][1]} {results['name']}\n" \
@@ -209,31 +204,17 @@ def hotel_query(querystring: dict, message: types.Message):
 
                     photo_lst = [types.InputMediaPhoto(media=link) for index, link in enumerate(data_photo) if
                                  user[message.chat.id].count_show_photo > index]
-                    try:
-                        bot.send_media_group(chat_id=message.chat.id, media=photo_lst)
-                    except Exception as er:
-                        logging.error(f"{datetime.now()} - {er} - Функция hotel_query - Отправка фото")
 
-                    user[message.chat.id].all_hotels[txt] = photo_lst
+                    all_hotels[txt] = photo_lst
                     photo_lst.clear()
                 else:
-                    user[message.chat.id].all_hotels[txt] = []
-                try:
-                    bot.send_message(chat_id=message.chat.id, text=txt,
-                                     disable_web_page_preview=True,
-                                     parse_mode="HTML")
+                    all_hotels[txt] = []
 
-                except Exception as e:
-                    logging.error(f"{datetime.now()} - {e} - Функция hotel_query - Отправка гостиниц")
-                txt = ''
-        user[message.chat.id].insert_db(logging, datetime)
-        bot.send_message(chat_id=message.chat.id, text=loc_txt[lang][8].format(len(user[message.chat.id].all_hotels)))
         with open('hotel.json', 'w') as f:
-            json.dump(user[message.chat.id].all_hotels, f, indent=4)
+            json.dump(all_hotels, f, indent=4)
+        return all_hotels
     else:
-        bot.send_message(chat_id=message.chat.id, text=data,
-                         disable_web_page_preview=True,
-                         parse_mode="HTML")
+        return data
 
 
 def history(message: types.Message) -> None:

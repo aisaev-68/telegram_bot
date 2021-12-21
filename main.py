@@ -1,11 +1,11 @@
-## -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import re
 from botrequests.request_api import history, hotel_query, types, get_city_id, \
     user, bot, datetime, logging, Keyboard
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
 from botrequests.user_class import Users
-from botrequests.locales import l_text, loctxt, info_help
+from botrequests.locales import loctxt, info_help
 
 
 class MyStyleCalendar(WYearTelegramCalendar):
@@ -16,13 +16,17 @@ class MyStyleCalendar(WYearTelegramCalendar):
     next_button = "➡️"
 
 
+def add_user(message):
+    if not user.get(message.from_user.id):
+        user[message.from_user.id] = Users(message)
+    user[message.chat.id].clearCache()
+
+
 @bot.message_handler(commands=["help", "start"])
 def help_start_message(message: types.Message) -> None:
     """Функция для обработки команд "help", "start"
     """
-    if not user.get(message.from_user.id):
-        user[message.from_user.id] = Users(message)
-    user[message.chat.id].clearCache()
+    add_user(message)
     user[message.chat.id].command = message.text.lower()
     bot.send_message(chat_id=message.chat.id,
                      text='Выберите язык (Choose language)',
@@ -33,9 +37,7 @@ def help_start_message(message: types.Message) -> None:
 def command_message(message: types.Message) -> None:
     """Функция для обработки команд "lowprice", "highprice", "bestdeal"
     """
-    if not user.get(message.from_user.id):
-        user[message.from_user.id] = Users(message)
-    user[message.chat.id].clearCache()
+    add_user(message)
     user[message.chat.id].command = message.text.lower()
     if user[message.chat.id].language == '':
         user[message.chat.id].language = (
@@ -49,9 +51,7 @@ def command_message(message: types.Message) -> None:
 def history_message(message: types.Message) -> None:
     """Функция для обработки команды вывода истории
     """
-    if not user.get(message.from_user.id):
-        user[message.from_user.id] = Users(message)
-    user[message.chat.id].clearCache()
+    add_user(message)
     if user[message.chat.id].language == '':
         user[message.chat.id].language = (
             message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
@@ -93,11 +93,9 @@ def ask_search_city(message: types.Message) -> None:
     query_str = user[message.from_user.id].query_string('city')
     city = get_city_id(query_str)
     if city.get('markup'):
-        bot.edit_message_text(text=city['txt'], chat_id=message.chat.id,
+        bot.edit_message_text(text=l_text[user[message.chat.id].language][1], chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id,
                               parse_mode='HTML', reply_markup=city['markup'])
-    elif city.get('quota'):
-        bot.edit_message_text(text=city['quota'], chat_id=message.chat.id)
     elif city.get('empty'):
         command = user[message.from_user.id].command
         user[message.chat.id].clearCache()
@@ -105,8 +103,8 @@ def ask_search_city(message: types.Message) -> None:
         bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][1])
         m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
         bot.register_next_step_handler(m, ask_search_city)
-    elif city.get('serv_message'):
-        bot.send_message(message.chat.id, city['serv_message'])
+    else:
+        bot.send_message(message.chat.id, city['error'])
 
 
 def ask_date(message: types.Message, txt: str) -> None:
@@ -213,8 +211,29 @@ def step_show_info(message: types.Message) -> None:
 
         bot.register_next_step_handler(message, price_min_max)
     else:
-        query_str = user[message.chat.id].query_string()
-        hotel_query(query_str, message)
+        send_hotels_chat(message)
+
+def send_hotels_chat(message):
+    query_str = user[message.chat.id].query_string()
+    data = hotel_query(query_str, message)
+    if not data.get("error"):
+        for hotel, photo in data.items():
+            if len(photo) > 0:
+                try:
+                    bot.send_media_group(chat_id=message.chat.id, media=photo)
+                except Exception as er:
+                    logging.error(f"{datetime.now()} - {er} - Функция send_hotels_chat - Отправка фото")
+            try:
+                bot.send_message(chat_id=message.chat.id, text=hotel,
+                                 disable_web_page_preview=True,
+                                 parse_mode="HTML")
+            except Exception as e:
+                logging.error(f"{datetime.now()} - {e} - Функция send_hotels_chat - Отправка гостиниц")
+        bot.send_message(chat_id=message.chat.id, text=loc_txt[lang][8].format(len(data)))
+    else:
+        bot.send_message(chat_id=message.chat.id, text=data["error"],
+                         disable_web_page_preview=True,
+                         parse_mode="HTML")
 
 
 @bot.callback_query_handler(func=lambda call: True)
