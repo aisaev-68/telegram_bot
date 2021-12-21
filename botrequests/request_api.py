@@ -171,7 +171,7 @@ def hotel_query(querystring: dict, message: types.Message) -> dict:
     links_htmls = ("https://ru.hotels.com/ho{}" if lang == "ru_RU"
                    else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
 
-    if data["ok"]:
+    if data.get("ok"):
         if user[message.chat.id].command == '/bestdeal':
             if user[message.chat.id].language == 'ru_RU':
                 low_data = [d for d in data["ok"]['data']['body']['searchResults']['results']
@@ -204,7 +204,6 @@ def hotel_query(querystring: dict, message: types.Message) -> dict:
 
                     photo_lst = [types.InputMediaPhoto(media=link) for index, link in enumerate(data_photo) if
                                  user[message.chat.id].count_show_photo > index]
-
                     all_hotels[txt] = photo_lst
                     photo_lst.clear()
                 else:
