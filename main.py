@@ -273,7 +273,7 @@ def inline(call):
             ask_count_photo(call.message)
 
         else:
-            bot.send_message(call.message.chat.id, loctxt[user[call.message.chat.id].language][0])
+
             bot.answer_callback_query(callback_query_id=call.id)
             step_show_info(call.message)
 

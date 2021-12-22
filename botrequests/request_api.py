@@ -62,6 +62,7 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
 
     if language == 'ru_RU':
         try:
+            print(line_text['price'])
             if line_text['price'].get('info'):
                 day = line_text['price']['info'].split()[4]
                 price_total = line_text['price']['exactCurrent']
@@ -76,8 +77,13 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
             logging.error(f"{datetime.now()} - {er} - Функция price_parse (русский язык)")
     else:
         try:
+
             if line_text['price'].get('fullyBundledPricePerStay'):
-                day = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[3]
+                pr = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()
+                if len(pr) > 2:
+                    day = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[3]
+                else:
+                    day = diff_date(checkIn, checkOut)
                 price_total = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][
                 1:].replace(',', '')
                 price_day = round(float(price_total) / float(day), 2)
