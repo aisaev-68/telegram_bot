@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from decouple import config
 import json
 from telebot import TeleBot
@@ -228,7 +230,7 @@ def hotel_query(querystring: dict, message: types.Message) -> dict:
                       f"💵 {loc_txt[lang][8]} <b>{price['price_day']}</b>\n" \
                       f"💵 {loc_txt[lang][9].format(price['day'])} <b>{price['price_total']}</b>\n" \
                       f"🌍 {loc_txt[lang][10]} {links_htmls.format(results['id'])}\n\n"
-                print(txt)
+
                 if user[message.chat.id].status_show_photo:
                     data_photo = get_photos(results['id'], user[message.chat.id].count_show_photo)
                     if len(data_photo) > 0:
@@ -240,7 +242,7 @@ def hotel_query(querystring: dict, message: types.Message) -> dict:
 
         # with open('hotel.json', 'w') as f:
         #     json.dump(all_hotels, f, indent=4)
-        print(all_hotels)
+
         return all_hotels
     else:
         return data

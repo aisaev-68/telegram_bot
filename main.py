@@ -233,7 +233,7 @@ def step_show_info(message: types.Message) -> None:
 def send_hotels_chat(message):
     query_str = user[message.chat.id].query_string()
     data = hotel_query(query_str, message)
-    print(data)
+
     if not data.get("error"):
         for hotel, photo in data.items():
             if len(photo) > 0:
