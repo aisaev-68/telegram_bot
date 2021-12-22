@@ -1,7 +1,7 @@
 from decouple import config
 import json
-from telebot import TeleBot, util
-from keyboards import types, Keyboard
+from telebot import TeleBot
+from botrequests.keyboards import types, Keyboard
 from requests import request
 from datetime import datetime
 import logging
@@ -39,29 +39,53 @@ loc_txt = {'ru_RU':
            }
 
 
-def price_parse(line_text: dict, lang: str) -> dict:
+def diff_date(checkIn: str, checkOut: str) -> int:
+    """
+    Функция определения количества суток проживания
+    :return: возвращает количество суток
+    """
+    import datetime
+    a = checkIn.split('-')
+    b = checkOut.split('-')
+    d = str(datetime.date(int(b[0]), int(b[1]), int(b[2])) - datetime.date(int(a[0]), int(a[1]), int(a[2])))
+    return int(d.split()[0])
+
+
+def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> dict:
     """Функция возвращает из полученной строки кол-во дней, общаую сумму и цену за сутки в виде словаря
     {'day': day, 'price_total': price_total, 'price_day': price_day}
     :param line_text: строка для парсинга
     :param lang: язык пользователя
     :param logging: модуль logging
     :param datetime: модуль datetime"""
-    if lang == 'ru_RU':
+
+    if language == 'ru_RU':
         try:
-            day = line_text['price']['info'].split()[4]
-            price_total = line_text['price']['exactCurrent']
-            price_day = round(price_total / float(day), 2)
-            return {'day': day, 'price_total': price_total, 'price_day': price_day}
+            if line_text['price'].get('info'):
+                day = line_text['price']['info'].split()[4]
+                price_total = line_text['price']['exactCurrent']
+                price_day = round(price_total / float(day), 2)
+                return {'day': day, 'price_total': price_total, 'price_day': price_day}
+            else:
+                day = diff_date(checkIn, checkOut)
+                price_day = line_text['price']['exactCurrent']
+                price_total = round(price_day * float(day), 2)
+                return {'day': day, 'price_total': price_total, 'price_day': price_day}
         except Exception as er:
             logging.error(f"{datetime.now()} - {er} - Функция price_parse (русский язык)")
     else:
         try:
-            day = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[3]
-            price_total = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][
-            1:].replace(',', '')
-            print(BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser'))
-            price_day = round(float(price_total) / float(day), 2)
-            return {'day': day, 'price_total': price_total, 'price_day': price_day}
+            if line_text['price'].get('fullyBundledPricePerStay'):
+                day = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[3]
+                price_total = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][
+                1:].replace(',', '')
+                price_day = round(float(price_total) / float(day), 2)
+                return {'day': day, 'price_total': price_total, 'price_day': price_day}
+            else:
+                day = diff_date(checkIn, checkOut)
+                price_day = line_text['price']['exactCurrent']
+                price_total = round(price_day * float(day), 2)
+                return {'day': day, 'price_total': price_total, 'price_day': price_day}
         except Exception as er:
             logging.error(f"{datetime.now()} - {er} - Функция price_parse (английски язык)")
 
@@ -113,7 +137,7 @@ def req_api(url: str, querystring: dict, lang="en_US") -> Any:
         return {"error": server_error[lang]["erjson"]}
 
 
-def get_photos(id_photo: str) -> list:
+def get_photos(id_photo: str, count: int) -> list:
     """
     Функция возвращает список ссылок на фотографии отеля. Если не найдены, возвращает пустой список.
     :param id_photo: ID отеля
@@ -124,9 +148,13 @@ def get_photos(id_photo: str) -> list:
     querystring = {"id": f"{id_photo}"}
     response = req_api(url, querystring)
     photo_list = []
-    for photo in response["roomImages"]:
-        for img in photo['images']:
-            photo_list.append(img['baseUrl'].replace('{size}', 'z'))
+    if response.get("ok"):
+        for photo in response["ok"]["roomImages"]:
+            for img in photo['images']:
+                if len(photo_list) != count:
+                    photo_list.append(img['baseUrl'].replace('{size}', 'z'))
+            if len(photo_list) != count:
+                break
     return photo_list
 
 
@@ -148,7 +176,7 @@ def get_city_id(querystring: dict) -> dict:
                         parse_city = city_parse(name['caption']).title()
                         markup.add(types.InlineKeyboardButton(parse_city,
                                                               callback_data='cbid_' + str(name['destinationId'])))
-            return {"markup": markup.add(types.InlineKeyboardButton(loc[lang][0], callback_data='Cancel_process'))}
+            return {"markup": markup.add(types.InlineKeyboardButton(loc_txt[lang][0], callback_data='Cancel_process'))}
         else:
             return {'empty': None}
     else:
@@ -187,54 +215,32 @@ def hotel_query(querystring: dict, message: types.Message) -> dict:
         all_hotels = {}
         for hotel_count, results in enumerate(low_data):
             txt = ''
-            price = price_parse(results["ratePlan"], user[message.chat.id].language)
+            print(results)
+            price = price_parse(results["ratePlan"], user[message.chat.id].language,
+                                querystring['checkIn'], querystring['checkOut'])
             if querystring["pageSize"] != hotel_count:
-                txt = f"<strong>⭐⭐⭐{loc_txt[lang][0]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐⭐⭐</strong>\n" \
-                      f"🏨 {loc_txt[lang][1]} {results['name']}\n" \
-                      f"       {loc_txt[lang][2]} {results['address'].get('countryName')}, {results['address'].get('locality')}, " \
-                      f"{(results['address'].get('streetAddress') if results['address'].get('streetAddress') else loc_txt[lang][10])}\n" \
-                      f"🚗 {loc_txt[lang][3]} {results['landmarks'][0]['distance']}\n" \
-                      f"📅 {loc_txt[lang][4]} {querystring['checkIn']} - {querystring['checkOut']}\n" \
-                      f"💵 {loc_txt[lang][5]} <b>{price['price_day']}</b>\n" \
-                      f"💵 {loc_txt[lang][6].format(price['day'])} <b>{price['price_total']}</b>\n" \
-                      f"🌍 {loc_txt[lang][7]} {links_htmls.format(results['id'])}\n\n"
-
+                txt = f"<strong>⭐{loc_txt[lang][3]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐</strong>\n" \
+                      f"🏨 {loc_txt[lang][4]} {results['name']}\n" \
+                      f"       {loc_txt[lang][5]} {results['address'].get('countryName')}, {results['address'].get('locality')}, " \
+                      f"{(results['address'].get('streetAddress') if results['address'].get('streetAddress') else loc_txt[lang][11])}\n" \
+                      f"🚗 {loc_txt[lang][6]} {results['landmarks'][0]['distance']}\n" \
+                      f"📅 {loc_txt[lang][7]} {querystring['checkIn']} - {querystring['checkOut']}\n" \
+                      f"💵 {loc_txt[lang][8]} <b>{price['price_day']}</b>\n" \
+                      f"💵 {loc_txt[lang][9].format(price['day'])} <b>{price['price_total']}</b>\n" \
+                      f"🌍 {loc_txt[lang][10]} {links_htmls.format(results['id'])}\n\n"
+                print(txt)
                 if user[message.chat.id].status_show_photo:
-                    data_photo = get_photos(results['id'])
-
-                    photo_lst = [types.InputMediaPhoto(media=link) for index, link in enumerate(data_photo) if
-                                 user[message.chat.id].count_show_photo > index]
-                    all_hotels[txt] = photo_lst
-                    photo_lst.clear()
+                    data_photo = get_photos(results['id'], user[message.chat.id].count_show_photo)
+                    if len(data_photo) > 0:
+                        all_hotels[txt] = [types.InputMediaPhoto(media=link) for link in data_photo]
+                    else:
+                        all_hotels[txt] = []
                 else:
                     all_hotels[txt] = []
 
-        with open('hotel.json', 'w') as f:
-            json.dump(all_hotels, f, indent=4)
+        # with open('hotel.json', 'w') as f:
+        #     json.dump(all_hotels, f, indent=4)
+        print(all_hotels)
         return all_hotels
     else:
         return data
-
-
-def history(message: types.Message) -> None:
-    """
-    Функция вывода трех последних запросов в чат.
-    :param message: объект входящего сообщения от пользователя
-    """
-    if user[message.chat.id].language == '':
-        user[message.chat.id].language = (
-            message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
-                message.chat.id].language)
-    bot.set_my_commands(commands=Keyboard().my_commands(user[message.chat.id].language),
-                        scope=types.BotCommandScopeChat(message.chat.id))
-    history = user[message.chat.id].history(logging, datetime)
-    if len(history) == 0:
-        txt = loc[user[message.chat.id].language][3]
-        bot.send_message(chat_id=message.chat.id, text=txt)
-    else:
-        for elem in history:
-            splitted_text = util.split_string(elem, 3000)
-            for txt in splitted_text:
-                bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
-
-    bot.send_message(chat_id=message.chat.id, text=loc[user[message.chat.id].language][4])

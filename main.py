@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import re
-from botrequests.request_api import history, hotel_query, types, get_city_id, \
-    user, bot, datetime, logging, Keyboard
+
+from botrequests.request_api import hotel_query, get_city_id, \
+    user, bot, datetime, logging, types, Keyboard
+from telebot import util
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
 from botrequests.user_class import Users
 from botrequests.locales import loctxt, info_help
+
+
+
+
 
 
 class MyStyleCalendar(WYearTelegramCalendar):
@@ -43,7 +49,7 @@ def command_message(message: types.Message) -> None:
         user[message.chat.id].language = (
             message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
                 message.chat.id].language)
-    m = bot.send_message(message.chat.id, l_text[user[message.chat.id].language][0])
+    m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
     bot.register_next_step_handler(m, ask_search_city)
 
 
@@ -56,8 +62,18 @@ def history_message(message: types.Message) -> None:
         user[message.chat.id].language = (
             message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
                 message.chat.id].language)
-    bot.send_message(message.chat.id, l_text[user[message.chat.id].language][1])
-    history(message)
+    bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][11])
+    history = user[message.chat.id].history(logging, datetime)
+    if len(history) == 0:
+        txt = loctxt[user[message.chat.id].language][15]
+        bot.send_message(chat_id=message.chat.id, text=txt)
+    else:
+        for elem in history:
+            splitted_text = util.split_string(elem, 3000)
+            for txt in splitted_text:
+                bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
+
+    bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][8])
 
 
 @bot.message_handler(content_types=['text'])
@@ -69,7 +85,7 @@ def get_text_messages(message: types.Message) -> None:
         user[message.from_user.id] = Users(message)
     user[message.chat.id].language = (
         "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
-    bot.send_message(text=l_text[user[message.chat.id].language][2] + info_help[user[message.chat.id].language],
+    bot.send_message(text=loctxt[user[message.chat.id].language][25] + info_help[user[message.chat.id].language],
                      chat_id=message.from_user.id)
 
 
@@ -93,7 +109,7 @@ def ask_search_city(message: types.Message) -> None:
     query_str = user[message.from_user.id].query_string('city')
     city = get_city_id(query_str)
     if city.get('markup'):
-        bot.edit_message_text(text=l_text[user[message.chat.id].language][1], chat_id=message.chat.id,
+        bot.edit_message_text(text=loctxt[user[message.chat.id].language][3], chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id,
                               parse_mode='HTML', reply_markup=city['markup'])
     elif city.get('empty'):
@@ -122,7 +138,7 @@ def ask_count_hotels(message: types.Message) -> None:
     """Функция предлагает указать количество отелей, которые необходимо вывести
     :param message: входящее сообщение от пользователя
     """
-    bot.edit_message_text(text=loctxt[user[message.chat.id].language][5],
+    bot.edit_message_text(text=loctxt[user[message.chat.id].language][6],
                           chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
 
@@ -137,17 +153,17 @@ def price_min_max(message: types.Message) -> None:
     try:
         price_max, price_min = int(message.text.split()[1]), int(message.text.split()[0])
         if price_min > price_max:
-            bot.send_message(text=loctxt[user[message.chat.id].language][21],
+            bot.send_message(text=loctxt[user[message.chat.id].language][24],
                              chat_id=message.chat.id)
             price_min, price_max = price_max, price_min
         user[message.chat.id].price_min = price_min
         user[message.chat.id].price_max = price_max
-        m = bot.send_message(text=loctxt[user[message.chat.id].language][20],
+        m = bot.send_message(text=loctxt[user[message.chat.id].language][23],
                              chat_id=message.chat.id)
         bot.register_next_step_handler(m, distance_min_max)
     except Exception as er:
         logging.error(f"{datetime.now()} - {er} - Функция price_min_max - Ошибка ввода мин- макс. цены")
-        msg = bot.send_message(text=loctxt[user[message.chat.id].language][18],
+        msg = bot.send_message(text=loctxt[user[message.chat.id].language][21],
                                chat_id=message.chat.id)
         bot.register_next_step_handler(msg, price_min_max)
 
@@ -163,27 +179,27 @@ def distance_min_max(message: types.Message) -> None:
         user[message.chat.id].distance_max, user[message.chat.id].distance_min = float(message.text.split()[1]), \
                                                                                  float(message.text.split()[0])
         if user[message.chat.id].distance_min > user[message.chat.id].distance_max:
-            bot.send_message(text=loctxt[user[message.chat.id].language][19],
+            bot.send_message(text=loctxt[user[message.chat.id].language][22],
                              chat_id=message.chat.id)
             user[message.chat.id].distance_max, user[message.chat.id].distance_min = user[message.chat.id].distance_min, \
                                                                                      user[message.chat.id].distance_max
         # bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
+        bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][0])
+        send_hotels_chat(message)
 
     except Exception as er:
         logging.error(f"{datetime.now()} - {er} - Функция distance_min_max - Ошибка ввода мин- макс. расстояния")
-        msg = bot.send_message(text=loctxt[user[message.chat.id].language][18],
+        msg = bot.send_message(text=loctxt[user[message.chat.id].language][21],
                                chat_id=message.chat.id)
         bot.register_next_step_handler(msg, distance_min_max)
-    bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][0])
-    query_str = user[message.chat.id].query_string()
-    hotel_query(query_str, message)
+
 
 
 def ask_show_photo(message: types.Message):
     """Функция предлагает показ фотографии отелей
     :param message: входящее сообщение от пользователя
     """
-    bot.edit_message_text(text=loctxt[user[message.chat.id].language][6], chat_id=message.chat.id,
+    bot.edit_message_text(text=loctxt[user[message.chat.id].language][7], chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
                           reply_markup=Keyboard().photo_yes_no(user[message.chat.id].language))
 
@@ -193,7 +209,7 @@ def ask_count_photo(message: types.Message) -> None:
     Функция прелагает выбрать количество фото для загрузки
     :param message: объект входящего сообщения от пользователя
     """
-    bot.edit_message_text(text=loctxt[user[message.chat.id].language][7], chat_id=message.chat.id,
+    bot.edit_message_text(text=loctxt[user[message.chat.id].language][8], chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
                           reply_markup=Keyboard().photo_numb(user[message.chat.id].language))
 
@@ -207,15 +223,17 @@ def step_show_info(message: types.Message) -> None:
     command = user[message.chat.id].command
     bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
     if command == '/bestdeal':
-        bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][17])
+        bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][20])
 
         bot.register_next_step_handler(message, price_min_max)
     else:
         send_hotels_chat(message)
 
+
 def send_hotels_chat(message):
     query_str = user[message.chat.id].query_string()
     data = hotel_query(query_str, message)
+    print(data)
     if not data.get("error"):
         for hotel, photo in data.items():
             if len(photo) > 0:
@@ -230,11 +248,12 @@ def send_hotels_chat(message):
             except Exception as e:
                 logging.error(f"{datetime.now()} - {e} - Функция send_hotels_chat - Отправка гостиниц")
         user[message.chat.id].insert_db(data, logging, datetime)
-        bot.send_message(chat_id=message.chat.id, text=loc_txt[lang][8].format(len(data)))
+        bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][13].format(len(data)))
     else:
         bot.send_message(chat_id=message.chat.id, text=data["error"],
                          disable_web_page_preview=True,
                          parse_mode="HTML")
+
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -264,17 +283,17 @@ def inline(call):
             if not user[call.message.chat.id].checkIn:
                 user[call.message.chat.id].checkIn = result.strftime('%Y-%m-%d')
                 bot.answer_callback_query(callback_query_id=call.id,
-                                          text=loctxt[user[call.message.chat.id].language][8])
-                ask_date(call.message, loctxt[user[call.message.chat.id].language][4])
+                                          text=loctxt[user[call.message.chat.id].language][9])
+                ask_date(call.message, loctxt[user[call.message.chat.id].language][5])
 
             else:
                 user[call.message.chat.id].checkOut = result.strftime('%Y-%m-%d')
                 if user[call.message.chat.id].checkOut > user[call.message.chat.id].checkIn:
                     ask_count_hotels(call.message)
                     bot.answer_callback_query(callback_query_id=call.id,
-                                              text=loctxt[user[call.message.chat.id].language][9])
+                                              text=loctxt[user[call.message.chat.id].language][10])
                 else:
-                    ask_date(call.message, loctxt[user[call.message.chat.id].language][10])
+                    ask_date(call.message, loctxt[user[call.message.chat.id].language][12])
 
     elif call.data in ["five", "ten", "fifteen", "twenty", "twenty_five"]:
         numbers_hotel = {"five": 5, "ten": 10, "fifteen": 15, "twenty": 20, "twenty_five": 25}
@@ -301,11 +320,11 @@ def inline(call):
     elif call.data.startswith('cbid_'):
         user[call.message.chat.id].id_city = call.data[5:]
         user[call.message.chat.id].message_id = call.message.message_id
-        ask_date(call.message, loctxt[user[call.message.chat.id].language][3])
+        ask_date(call.message, loctxt[user[call.message.chat.id].language][4])
         bot.answer_callback_query(callback_query_id=call.id)
 
     elif call.data == 'Cancel_process':
-        bot.edit_message_text(text=loctxt[user[call.message.chat.id].language][16], chat_id=call.message.chat.id,
+        bot.edit_message_text(text=loctxt[user[call.message.chat.id].language][19], chat_id=call.message.chat.id,
                               message_id=user[call.message.chat.id].message_id)
         bot.answer_callback_query(callback_query_id=call.id)
 
