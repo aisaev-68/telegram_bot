@@ -25,7 +25,7 @@ loctxt = {'ru_RU':
                'Ваша история пуста.', 'Команда:', 'Дата запросов:', 'Команда выполнена.', 'Вы отменили данную операцию',
                'Укажите через пробел диапазон цен в рублях.', 'Ошибка ввода. Пожалуйста введите через пробел числа.',
                'Вы перепутали расстояния местами, я исправил.', 'Укажите через пробел диапазон расстояния до центра в км.',
-               'Вы перепутали цены местами, я исправил.', 'Извините, данная команда мне неизвестна.\n'
+               'Вы перепутали цены местами, я исправил.', 'Извините, данная команда мне неизвестна.\n', 'Отмена'
                ],
           'en_US':
               ['Are looking for...', 'No such city has been found. Repeat the search.',
@@ -39,6 +39,7 @@ loctxt = {'ru_RU':
                'Input Error. Please enter through the number of numbers.',
                'You confused the distance in places, I corrected.',
                'Specify via the range of the distance to the center in miles',
-               'You confused prices in some places, I corrected.', 'Sorry, this command is unknown to me.\n'
+               'You confused prices in some places, I corrected.', 'Sorry, this command is unknown to me.\n',
+               'Cancel'
                ]
           }

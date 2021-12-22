@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import re
-
 from botrequests.request_api import hotel_query, get_city_id, \
-    user, bot, datetime, logging, types, Keyboard
+    user, bot, datetime, logging
 from telebot import util
+from botrequests.keyboards import types, Keyboard
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
 from botrequests.user_class import Users
 from botrequests.locales import loctxt, info_help
@@ -104,14 +104,18 @@ def ask_search_city(message: types.Message) -> None:
     bot.set_my_commands(commands=Keyboard().my_commands(user[message.chat.id].language),
                         scope=types.BotCommandScopeChat(message.chat.id))
     msg = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
-    user[message.from_user.id].message_id = msg.message_id
+    user[message.chat.id].message_id = msg.message_id
 
     query_str = user[message.from_user.id].query_string('city')
     city = get_city_id(query_str)
-    if city.get('markup'):
+    if city.get('city'):
+        markup = types.InlineKeyboardMarkup()
+        for id_city, i_city in city['city'].items():
+            markup.add(types.InlineKeyboardButton(i_city, callback_data='cbid_' + str(id_city)))
+        markup.add(types.InlineKeyboardButton(loctxt[user[message.chat.id].language][26], callback_data='Cancel_process'))
         bot.edit_message_text(text=loctxt[user[message.chat.id].language][3], chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id,
-                              parse_mode='HTML', reply_markup=city['markup'])
+                              parse_mode='HTML', reply_markup=markup)
     elif city.get('empty'):
         command = user[message.from_user.id].command
         user[message.chat.id].clearCache()
@@ -184,7 +188,6 @@ def distance_min_max(message: types.Message) -> None:
             user[message.chat.id].distance_max, user[message.chat.id].distance_min = user[message.chat.id].distance_min, \
                                                                                      user[message.chat.id].distance_max
         # bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
-        bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][0])
         send_hotels_chat(message)
 
     except Exception as er:
@@ -231,14 +234,17 @@ def step_show_info(message: types.Message) -> None:
 
 
 def send_hotels_chat(message):
+    msg = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
+    user[message.chat.id].message_id = msg.message_id
     query_str = user[message.chat.id].query_string()
-    data = hotel_query(query_str, message)
+    data = hotel_query(query_str, user[message.chat.id].get_param())
 
     if not data.get("error"):
         for hotel, photo in data.items():
             if len(photo) > 0:
+                links_photo = [types.InputMediaPhoto(media=link) for link in photo]
                 try:
-                    bot.send_media_group(chat_id=message.chat.id, media=photo)
+                    bot.send_media_group(chat_id=message.chat.id, media=links_photo)
                 except Exception as er:
                     logging.error(f"{datetime.now()} - {er} - Функция send_hotels_chat - Отправка фото")
             try:
@@ -253,7 +259,6 @@ def send_hotels_chat(message):
         bot.send_message(chat_id=message.chat.id, text=data["error"],
                          disable_web_page_preview=True,
                          parse_mode="HTML")
-
 
 
 @bot.callback_query_handler(func=lambda call: True)
