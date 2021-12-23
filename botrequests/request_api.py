@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import requests
 from decouple import config
 import json
 from telebot import TeleBot
@@ -132,10 +132,10 @@ def req_api(url: str, querystring: dict, lang="en_US") -> dict:
             else:
                 logging.error(f"{datetime.now()} - Функция req_api - Что-то пошло не так. Повторите позже.")
                 return {"error": server_error[lang]["erhttp"]}
-    except ConnectionError as ercon:
+    except requests.exceptions.ConnectionError as ercon:
         logging.error(f"{datetime.now()} - {ercon} - Функция req_api - Нет, соединения с сервисом.")
         return {"error": server_error[lang]["ercon"]}
-    except TimeoutError as ertime:
+    except requests.exceptions.Timeout as ertime:
         logging.error(f"{datetime.now()} - {ertime} - Функция req_api - Время ожидания запроса истекло")
         return {"error": server_error[lang]["ertime"]}
     except json.decoder.JSONDecodeError as erjson:
