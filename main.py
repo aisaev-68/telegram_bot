@@ -138,11 +138,12 @@ def ask_date(message: types.Message, txt: str) -> None:
     """
     lng = user[message.chat.id].language
     logging.error(f"{datetime.now()} - Предложено ввести {txt}")
-    bot.edit_message_text(text=txt, chat_id=message.chat.id,
-                          message_id=user[message.chat.id].message_id,
-                          parse_mode='MARKDOWN',
-                          reply_markup=MyStyleCalendar(calendar_id=1,
-                                                       locale=lng[:2]).build()[0])
+    m = bot.edit_message_text(text=txt, chat_id=message.chat.id,
+                              message_id=user[message.chat.id].message_id,
+                              parse_mode='MARKDOWN',
+                              reply_markup=MyStyleCalendar(calendar_id=1,
+                                                           locale=lng[:2]).build()[0])
+    user[message.chat.id].message_id = m.message_id
 
 
 def ask_count_hotels(message: types.Message) -> None:
@@ -318,7 +319,10 @@ def inline(call):
                     bot.answer_callback_query(callback_query_id=call.id,
                                               text=loctxt[user[call.message.chat.id].language][10])
                 else:
-                    ask_date(call.message, loctxt[user[call.message.chat.id].language][12])
+                    bot.answer_callback_query(callback_query_id=call.id,
+                                              text=loctxt[user[call.message.chat.id].language][12])
+                    #ask_date(call.message, loctxt[user[call.message.chat.id].language][12])
+
 
     elif call.data in ["five", "ten", "fifteen", "twenty", "twenty_five"]:
         numbers_hotel = {"five": 5, "ten": 10, "fifteen": 15, "twenty": 20, "twenty_five": 25}
