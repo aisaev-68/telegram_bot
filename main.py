@@ -24,6 +24,7 @@ def add_user(message) -> None:
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
     user[message.chat.id].clearCache()
+    logging.error(f"{datetime.now()} - Добавление пользователя")
 
 
 @bot.message_handler(commands=["help", "start"])
@@ -35,6 +36,7 @@ def help_start_message(message: types.Message) -> None:
     bot.send_message(chat_id=message.chat.id,
                      text='Выберите язык (Choose language)',
                      reply_markup=Keyboard().set_lang())
+    logging.error(f"{datetime.now()} - Выбрана команда {message.text}")
 
 
 @bot.message_handler(commands=["lowprice", "highprice", "bestdeal"])
@@ -49,6 +51,7 @@ def command_message(message: types.Message) -> None:
                 message.chat.id].language)
     m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
     bot.register_next_step_handler(m, ask_search_city)
+    logging.error(f"{datetime.now()} - Выбрана команда {message.text}")
 
 
 @bot.message_handler(commands=["history"])
@@ -67,11 +70,12 @@ def history_message(message: types.Message) -> None:
         bot.send_message(chat_id=message.chat.id, text=txt)
     else:
         for elem in history:
-            splitted_text = util.split_string(elem, 3000)
+            splitted_text = util.split_string(elem, 500)
+
             for txt in splitted_text:
                 bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
-
-    bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][8])
+    logging.error(f"{datetime.now()} - Выбрана команда /history")
+    bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][18])
 
 
 @bot.message_handler(content_types=['text'])
@@ -85,6 +89,8 @@ def get_text_messages(message: types.Message) -> None:
         "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
     bot.send_message(text=loctxt[user[message.chat.id].language][25] + info_help[user[message.chat.id].language],
                      chat_id=message.from_user.id)
+
+    logging.error(f"{datetime.now()} - Неизвестная команда {message.text}")
 
 
 def ask_search_city(message: types.Message) -> None:
@@ -112,6 +118,7 @@ def ask_search_city(message: types.Message) -> None:
             markup.add(types.InlineKeyboardButton(i_city, callback_data='cbid_' + str(id_city)))
         markup.add(
             types.InlineKeyboardButton(loctxt[user[message.chat.id].language][26], callback_data='Cancel_process'))
+        logging.error(f"{datetime.now()} - Данные городов отправлены в чат")
         bot.edit_message_text(text=loctxt[user[message.chat.id].language][3], chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id,
                               parse_mode='HTML', reply_markup=markup)
@@ -121,8 +128,10 @@ def ask_search_city(message: types.Message) -> None:
         user[message.chat.id].command = command
         bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][1])
         m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
+        logging.error(f"{datetime.now()} - Город {message.text} не найден. Повторение ввода другого города")
         bot.register_next_step_handler(m, ask_search_city)
     else:
+        logging.error(f"{datetime.now()} - От сервера получено сообщение {city['error']}")
         bot.send_message(message.chat.id, city['error'])
 
 
@@ -131,6 +140,7 @@ def ask_date(message: types.Message, txt: str) -> None:
     :patam txt: текст с предложением ввода даты
     """
     lng = user[message.chat.id].language
+    logging.error(f"{datetime.now()} - Предложено ввести {txt}")
     bot.edit_message_text(text=txt, chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
                           parse_mode='MARKDOWN',
@@ -142,6 +152,7 @@ def ask_count_hotels(message: types.Message) -> None:
     """Функция предлагает указать количество отелей, которые необходимо вывести
     :param message: входящее сообщение от пользователя
     """
+    logging.error(f"{datetime.now()} - Предложено ввести количество отелей")
     bot.edit_message_text(text=loctxt[user[message.chat.id].language][6],
                           chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
@@ -164,6 +175,7 @@ def price_min_max(message: types.Message) -> None:
         user[message.chat.id].price_max = price_max
         m = bot.send_message(text=loctxt[user[message.chat.id].language][23],
                              chat_id=message.chat.id)
+        logging.error(f"{datetime.now()} - Предложено ввести через пробел диапазон цен")
         bot.register_next_step_handler(m, distance_min_max)
     except Exception as er:
         logging.error(f"{datetime.now()} - {er} - Функция price_min_max - Ошибка ввода мин- макс. цены")
@@ -188,6 +200,7 @@ def distance_min_max(message: types.Message) -> None:
             user[message.chat.id].distance_max, user[message.chat.id].distance_min = user[message.chat.id].distance_min, \
                                                                                      user[message.chat.id].distance_max
         # bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
+        logging.error(f"{datetime.now()} - Предложено через пробел диапазон расстояния до центра")
         send_hotels_chat(message)
 
     except Exception as er:
@@ -201,6 +214,7 @@ def ask_show_photo(message: types.Message):
     """Функция предлагает показ фотографии отелей
     :param message: входящее сообщение от пользователя
     """
+    logging.error(f"{datetime.now()} - Предложено  показ фотографии отелей")
     bot.edit_message_text(text=loctxt[user[message.chat.id].language][7], chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
                           reply_markup=Keyboard().photo_yes_no(user[message.chat.id].language))
@@ -211,6 +225,7 @@ def ask_count_photo(message: types.Message) -> None:
     Функция прелагает выбрать количество фото для загрузки
     :param message: объект входящего сообщения от пользователя
     """
+    logging.error(f"{datetime.now()} - Предложено выбрать количество фото для загрузки")
     bot.edit_message_text(text=loctxt[user[message.chat.id].language][8], chat_id=message.chat.id,
                           message_id=user[message.chat.id].message_id,
                           reply_markup=Keyboard().photo_numb(user[message.chat.id].language))
@@ -226,9 +241,11 @@ def step_show_info(message: types.Message) -> None:
     bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
     if command == '/bestdeal':
         bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][20])
+        logging.error(f"{datetime.now()} - Вызвана функция price_min_max")
 
         bot.register_next_step_handler(message, price_min_max)
     else:
+        logging.error(f"{datetime.now()} - Вызвана функция send_hotels_chat")
         send_hotels_chat(message)
 
 
@@ -247,17 +264,21 @@ def send_hotels_chat(message: types.Message):
                 links_photo = [types.InputMediaPhoto(media=link) for link in photo]
                 try:
                     bot.send_media_group(chat_id=message.chat.id, media=links_photo)
+                    logging.error(f"{datetime.now()} - В чат отправлены фото")
                 except Exception as er:
                     logging.error(f"{datetime.now()} - {er} - Функция send_hotels_chat - Отправка фото")
             try:
+                logging.error(f"{datetime.now()} - В чат отправлены отели")
                 bot.send_message(chat_id=message.chat.id, text=hotel,
                                  disable_web_page_preview=True,
                                  parse_mode="HTML")
             except Exception as e:
                 logging.error(f"{datetime.now()} - {e} - Функция send_hotels_chat - Отправка гостиниц")
         user[message.chat.id].insert_db(data, logging, datetime)
+        logging.error(f"{datetime.now()} - Данные записаны в базу")
         bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][13].format(len(data)))
     else:
+        logging.error(f"{datetime.now()} - Получено сообщение от сервера {data['error']}")
         bot.send_message(chat_id=message.chat.id, text=data["error"],
                          disable_web_page_preview=True,
                          parse_mode="HTML")

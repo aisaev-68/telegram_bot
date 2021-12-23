@@ -249,13 +249,14 @@ class Users:
             con = sqlite3.connect('data.db')
             with con:
                 con.execute(
-                    "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, name TEXT, "
-                    "command TEXT, date TEXT, hotels TEXT);")
+                    "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, username TEXT, command TEXT, date TEXT);")
+
             txt = ''
             for item in list(all_hotels.keys()):
                 txt += item
             with con:
-                con.execute("INSERT INTO users (user_id, name, command, date, hotels) VALUES(?, ?, ?, ?, ?);",
+                con.execute("INSERT INTO users (user_id, name, command, date, hotels) "
+                            "VALUES(?, ?, ?, ?, ?);",
                             (self.__id_user, self.__username, self.__command, str(datetime.now()),
                              f"<strong>{d_loc[lng][0]} {self.__command}\n{d_loc[lng][1]} "
                              f"{str(datetime.now())}</strong>\n{txt}"))

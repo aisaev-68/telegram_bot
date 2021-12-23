@@ -220,9 +220,14 @@ def hotel_query(querystring: dict, parametrs: dict) -> dict:
         all_hotels = {}
         for hotel_count, results in enumerate(low_data):
             txt = ''
-
             price = price_parse(results["ratePlan"], lang, querystring['checkIn'], querystring['checkOut'])
             if querystring["pageSize"] != hotel_count:
+                photos = []
+                if parametrs['stat_photo']:
+                    data_photo = get_photos(results['id'], parametrs['count_photo'])
+                    if len(data_photo) > 0:
+                        photos = [link for link in data_photo]
+
                 txt = f"<strong>⭐{loc_txt[lang][3]} {(results.get('starRating')) if results.get('starRating') else '--'}⭐</strong>\n" \
                       f"🏨 {loc_txt[lang][4]} {results['name']}\n" \
                       f"       {loc_txt[lang][5]} {results['address'].get('countryName')}, {results['address'].get('locality')}, " \
@@ -233,14 +238,8 @@ def hotel_query(querystring: dict, parametrs: dict) -> dict:
                       f"💵 {loc_txt[lang][9].format(price['day'])} <b>{price['price_total']}</b>\n" \
                       f"🌍 {loc_txt[lang][10]} {links_htmls.format(results['id'])}\n\n"
 
-                if parametrs['stat_photo']:
-                    data_photo = get_photos(results['id'], parametrs['count_photo'])
-                    if len(data_photo) > 0:
-                        all_hotels[txt] = [link for link in data_photo]
-                    else:
-                        all_hotels[txt] = []
-                else:
-                    all_hotels[txt] = []
+
+                all_hotels[txt] = photos
 
         return all_hotels
     else:
