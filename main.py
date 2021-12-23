@@ -10,10 +10,6 @@ from botrequests.user_class import Users
 from botrequests.locales import loctxt, info_help
 
 
-
-
-
-
 class MyStyleCalendar(WYearTelegramCalendar):
     """ Класс календаря с выбором дня месяца
     """
@@ -22,7 +18,9 @@ class MyStyleCalendar(WYearTelegramCalendar):
     next_button = "➡️"
 
 
-def add_user(message):
+def add_user(message) -> None:
+    """Функция для добавления пользователя
+    """
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
     user[message.chat.id].clearCache()
@@ -112,7 +110,8 @@ def ask_search_city(message: types.Message) -> None:
         markup = types.InlineKeyboardMarkup()
         for id_city, i_city in city['city'].items():
             markup.add(types.InlineKeyboardButton(i_city, callback_data='cbid_' + str(id_city)))
-        markup.add(types.InlineKeyboardButton(loctxt[user[message.chat.id].language][26], callback_data='Cancel_process'))
+        markup.add(
+            types.InlineKeyboardButton(loctxt[user[message.chat.id].language][26], callback_data='Cancel_process'))
         bot.edit_message_text(text=loctxt[user[message.chat.id].language][3], chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id,
                               parse_mode='HTML', reply_markup=markup)
@@ -129,6 +128,7 @@ def ask_search_city(message: types.Message) -> None:
 
 def ask_date(message: types.Message, txt: str) -> None:
     """Функция предлагает ввести дату
+    :patam txt: текст с предложением ввода даты
     """
     lng = user[message.chat.id].language
     bot.edit_message_text(text=txt, chat_id=message.chat.id,
@@ -150,7 +150,7 @@ def ask_count_hotels(message: types.Message) -> None:
 
 
 def price_min_max(message: types.Message) -> None:
-    """Функция предлагает ввести через пробел диапазон диапазон цен, если все введено корректно
+    """Функция предлагает ввести через пробел диапазон цен, если все введено корректно
     вызывает функцию distance_min_max
     :param message: входящее сообщение от пользователя
     """
@@ -174,7 +174,7 @@ def price_min_max(message: types.Message) -> None:
 
 def distance_min_max(message: types.Message) -> None:
     """Функция предлагает ввести через пробел диапазон расстояния до центра, если все введено корректно
-    вызывает функцию hotel_query вывода гостиниц в чат
+    вызывает функцию send_hotels_chat вывода гостиниц в чат
     :param message: входящее сообщение от пользователя
     """
 
@@ -195,7 +195,6 @@ def distance_min_max(message: types.Message) -> None:
         msg = bot.send_message(text=loctxt[user[message.chat.id].language][21],
                                chat_id=message.chat.id)
         bot.register_next_step_handler(msg, distance_min_max)
-
 
 
 def ask_show_photo(message: types.Message):
@@ -219,7 +218,7 @@ def ask_count_photo(message: types.Message) -> None:
 
 def step_show_info(message: types.Message) -> None:
     """
-    Функция для вызова функции hotel_query вывода информации в чат. В случае если выбрана команда /bestdeal
+    Функция для вызова функции send_hotels_chat вывода информации в чат. В случае если выбрана команда /bestdeal
     вызывается функция price_min_max
     :param message: объект входящего сообщения от пользователя
     """
@@ -233,7 +232,10 @@ def step_show_info(message: types.Message) -> None:
         send_hotels_chat(message)
 
 
-def send_hotels_chat(message):
+def send_hotels_chat(message: types.Message):
+    """Функция вывода в чат информации о отелях
+    :param message: объект входящего сообщения от пользователя
+    """
     msg = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
     user[message.chat.id].message_id = msg.message_id
     query_str = user[message.chat.id].query_string()

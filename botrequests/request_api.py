@@ -6,7 +6,6 @@ from telebot import TeleBot
 from requests import request
 from datetime import datetime
 import logging
-from typing import Any
 from bs4 import BeautifulSoup
 
 bot = TeleBot(config('TELEGRAM_API_TOKEN'))
@@ -26,7 +25,6 @@ server_error = {"ru_RU": {"ertime": "Время ожидания запроса 
                           "erhttp": "Something went wrong. Please try again later.",
                           "quota": 'Monthly quota exceeded for BASIC plan requests.'}}
 
-
 loc_txt = {'ru_RU':
                ['Отмена', 'Ваша история пуста.', 'Команда выполнена.',
                 'Рейтинг: ', 'Отель: ', 'Адрес: ', 'От центра города:', 'Дата заезда-выезда: ',
@@ -42,7 +40,7 @@ loc_txt = {'ru_RU':
 
 def diff_date(checkIn: str, checkOut: str) -> int:
     """
-    Функция определения количества суток проживания
+    Функция определения количества суток проживания по датам заезда и выезда
     :return: возвращает количество суток
     """
     import datetime
@@ -53,12 +51,12 @@ def diff_date(checkIn: str, checkOut: str) -> int:
 
 
 def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> dict:
-    """Функция возвращает из полученной строки кол-во дней, общаую сумму и цену за сутки в виде словаря
+    """Функция возвращает из полученной строки кол-во дней, обшую сумму и цену за сутки в виде словаря
     {'day': day, 'price_total': price_total, 'price_day': price_day}
     :param line_text: строка для парсинга
-    :param lang: язык пользователя
-    :param logging: модуль logging
-    :param datetime: модуль datetime"""
+    :param language: язык пользователя
+    :param checkIn: дата заезда
+    :param checkOut: дата выезда"""
 
     if language == 'ru_RU':
         try:
@@ -81,10 +79,12 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
             if line_text['price'].get('fullyBundledPricePerStay'):
                 pr = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()
                 if len(pr) > 2:
-                    day = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[3]
+                    day = \
+                    BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[3]
                 else:
                     day = diff_date(checkIn, checkOut)
-                price_total = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][
+                price_total = \
+                BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][
                 1:].replace(',', '')
                 price_day = round(float(price_total) / float(day), 2)
                 return {'day': day, 'price_total': price_total, 'price_day': price_day}
@@ -105,7 +105,7 @@ def city_parse(line_text: str) -> str:
     return BeautifulSoup(line_text, 'html.parser').get_text().lower()
 
 
-def req_api(url: str, querystring: dict, lang="en_US") -> Any:
+def req_api(url: str, querystring: dict, lang="en_US") -> dict:
     """
     Функция возвращает данные запроса к API гостиниц.
     :param url: страница поиска
@@ -148,6 +148,7 @@ def get_photos(id_photo: str, count: int) -> list:
     """
     Функция возвращает список ссылок на фотографии отеля. Если не найдены, возвращает пустой список.
     :param id_photo: ID отеля
+    :param count: количество фото для загрузки
     :return photo_list: список ссылок на фотографии отеля
     """
 
@@ -167,7 +168,7 @@ def get_photos(id_photo: str, count: int) -> list:
 
 def get_city_id(querystring: dict) -> dict:
     """
-    Функция выводит в чат города.
+    Функция запрашивает информацию для вывода в чат городов.
     :param querystring: строка запроса в виде словаря {'query': 'минск', 'locale': 'ru_RU'}
     :param message: сообщение
     """
@@ -193,9 +194,9 @@ def hotel_query(querystring: dict, parametrs: dict) -> dict:
     Формирует словарь отелей на основе запроса пользователя и сортировкой по цене.
     Если отелей не найдено возвращает пустой словарь.
     :param querystring: строка запроса в виде словаря
-    :param message: сообщение
+    :param parametrs: словарь с дистанцией и ценой, командой
     :return result_low: возвращает словарь (название отеля, адрес,
-    фотографии отеля (если пользователь счёл необходимым их вывод)
+    фотографии отеля (если пользователь счёл необходимым их вывод) либо сообщение сервера
     """
 
     url_low = config('URL_LOW')

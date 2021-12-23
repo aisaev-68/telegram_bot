@@ -211,6 +211,15 @@ class Users:
                     'count_photo': self.__count_show_photo}
         return param
 
+    def get_param(self) -> dict:
+        param = {'command': self.__command, 'stat_photo': self.__status_show_photo,
+                 'count_photo': self.__count_show_photo}
+        if self.__command == '/bestdeal':
+            param = {'command': self.__command, 'dist_min': self.__distance_min,
+                     'dist_max': self.__distance_max, 'stat_photo': self.__status_show_photo,
+                     'count_photo': self.__count_show_photo}
+        return param
+
     def clearCache(self) -> None:
         """Функция для очистки не нужных данных при формировании нового запроса"""
 
