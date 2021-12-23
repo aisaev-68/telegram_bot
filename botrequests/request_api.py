@@ -60,7 +60,6 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
 
     if language == 'ru_RU':
         try:
-            print(line_text['price'])
             if line_text['price'].get('info'):
                 day = line_text['price']['info'].split()[4]
                 price_total = line_text['price']['exactCurrent']
@@ -177,7 +176,7 @@ def get_city_id(querystring: dict) -> dict:
     result_id_city = req_api(config('URL'), querystring, lang)
 
     if result_id_city.get("ok"):
-        if len(result_id_city) > 0:
+        if result_id_city["ok"]["moresuggestions"] > 0:
             parse_city = {}
             for city in result_id_city["ok"]['suggestions']:
                 if city['group'] == 'CITY_GROUP':
