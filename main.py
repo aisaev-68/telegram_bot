@@ -70,8 +70,7 @@ def history_message(message: types.Message) -> None:
         bot.send_message(chat_id=message.chat.id, text=txt)
     else:
         for elem in history:
-            splitted_text = util.split_string(elem, 500)
-
+            splitted_text = util.smart_split(elem[0], 3000)
             for txt in splitted_text:
                 bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
     logging.error(f"{datetime.now()} - В чат отправлена информация по истории запросов пользователя")

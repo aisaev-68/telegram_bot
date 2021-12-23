@@ -202,15 +202,6 @@ class Users:
             }
         return querystring
 
-    def get_param(self):
-        param = {'command': self.__command, 'stat_photo': self.__status_show_photo,
-                 'count_photo': self.__count_show_photo}
-        if self.__command == '/bestdeal':
-            param = {'command': self.__command, 'dist_min': self.__distance_min,
-                    'dist_max': self.__distance_max, 'stat_photo': self.__status_show_photo,
-                    'count_photo': self.__count_show_photo}
-        return param
-
     def get_param(self) -> dict:
         param = {'command': self.__command, 'stat_photo': self.__status_show_photo,
                  'count_photo': self.__count_show_photo}
@@ -265,7 +256,7 @@ class Users:
 
     def history(self, logging, datetime) -> list:
         """Функция возвращет историю запросов пользователя (команда,
-        дата запроса, список найденных гостиниц без фото (две последние запросы с ответами)
+        дата запроса, список найденных гостиниц без фото (три последние запросы с ответами)
         """
         try:
             con = sqlite3.connect('data.db')
