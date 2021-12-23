@@ -74,7 +74,7 @@ def history_message(message: types.Message) -> None:
 
             for txt in splitted_text:
                 bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
-    logging.error(f"{datetime.now()} - Выбрана команда /history")
+    logging.error(f"{datetime.now()} - В чат отправлена информация по истории запросов пользователя")
     bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][18])
 
 
@@ -83,14 +83,14 @@ def get_text_messages(message: types.Message) -> None:
     """Функция слушает все входящие сообщения и если
     не знакомы выдает сообщения и строку помощи
     """
-    if not user.get(message.from_user.id):
-        user[message.from_user.id] = Users(message)
+    add_user(message)
+    logging.error(f"{datetime.now()} - Неизвестная команда {message.text}")
     user[message.chat.id].language = (
         "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
     bot.send_message(text=loctxt[user[message.chat.id].language][25] + info_help[user[message.chat.id].language],
                      chat_id=message.from_user.id)
 
-    logging.error(f"{datetime.now()} - Неизвестная команда {message.text}")
+
 
 
 def ask_search_city(message: types.Message) -> None:
