@@ -24,7 +24,8 @@ loctxt = {'ru_RU':
                'Дата выезда должна быть больше даты въезда.Повторите ввод.', 'Найдено {} отелей', 'История запросов:\n',
                'Ваша история пуста.', 'Команда:', 'Дата запросов:', 'Команда выполнена.', 'Вы отменили данную операцию',
                'Укажите через пробел диапазон цен в рублях.', 'Ошибка ввода. Пожалуйста введите через пробел числа.',
-               'Вы перепутали расстояния местами, я исправил.', 'Укажите через пробел диапазон расстояния до центра в км.',
+               'Вы перепутали расстояния местами, я исправил.',
+               'Укажите через пробел диапазон расстояния до центра в км.',
                'Вы перепутали цены местами, я исправил.', 'Извините, данная команда мне неизвестна.\n', 'Отмена'
                ],
           'en_US':
@@ -32,7 +33,8 @@ loctxt = {'ru_RU':
                'In which city are we looking?', 'Please specify city', 'Select *check-in date*:',
                'Select *check-out date*:', 'Specify the number of hotels to be displayed (no more than 25).',
                'Show photos of hotels?', 'Select the number of photos to upload:',
-               ' Check-in date selected. ', ' Check-out date selected.', 'Information about the last three requests will be displayed',
+               ' Check-in date selected. ', ' Check-out date selected.',
+               'Information about the last three requests will be displayed',
                'The check-out date must be greater than the check-in date. Please re-enter.',
                'Found {} hotels', 'Request history:\n', 'Your story is empty.', 'Command:', 'Date of requests:',
                'Command completed.', 'You canceled this operation', 'Specify via the range of price range in dollars.',

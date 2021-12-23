@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import requests
+
 from decouple import config
 import json
 from telebot import TeleBot
-from requests import request
+from requests import request, ConnectionError, Timeout
 from datetime import datetime
 import logging
 from bs4 import BeautifulSoup
@@ -80,12 +80,13 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
                 pr = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()
                 if len(pr) > 2:
                     day = \
-                    BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[3]
+                        BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[
+                            3]
                 else:
                     day = diff_date(checkIn, checkOut)
                 price_total = \
-                BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][
-                1:].replace(',', '')
+                    BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][
+                    1:].replace(',', '')
                 price_day = round(float(price_total) / float(day), 2)
                 return {'day': day, 'price_total': price_total, 'price_day': price_day}
             else:
@@ -132,15 +133,15 @@ def req_api(url: str, querystring: dict, lang="en_US") -> dict:
             else:
                 logging.error(f"{datetime.now()} - Функция req_api - Что-то пошло не так. Повторите позже.")
                 return {"error": server_error[lang]["erhttp"]}
-    except requests.exceptions.ConnectionError as ercon:
+    except ConnectionError as ercon:
         logging.error(f"{datetime.now()} - {ercon} - Функция req_api - Нет, соединения с сервисом.")
         return {"error": server_error[lang]["ercon"]}
-    except requests.exceptions.Timeout as ertime:
+    except Timeout as ertime:
         logging.error(f"{datetime.now()} - {ertime} - Функция req_api - Время ожидания запроса истекло")
         return {"error": server_error[lang]["ertime"]}
     except json.decoder.JSONDecodeError as erjson:
         logging.error(
-            f"{datetime.now()} - {erjson} - Функция req_api - Получен некорректный ответ от сервиса.")
+            f"{datetime.now()} - {erjson} - Функция req_api - Получены некорректные данные от сервиса.")
         return {"error": server_error[lang]["erjson"]}
 
 
@@ -237,7 +238,6 @@ def hotel_query(querystring: dict, parametrs: dict) -> dict:
                       f"💵 {loc_txt[lang][8]} <b>{price['price_day']}</b>\n" \
                       f"💵 {loc_txt[lang][9].format(price['day'])} <b>{price['price_total']}</b>\n" \
                       f"🌍 {loc_txt[lang][10]} {links_htmls.format(results['id'])}\n\n"
-
 
                 all_hotels[txt] = photos
 

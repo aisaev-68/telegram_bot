@@ -90,8 +90,6 @@ def get_text_messages(message: types.Message) -> None:
                      chat_id=message.from_user.id)
 
 
-
-
 def ask_search_city(message: types.Message) -> None:
     """
     Функция готовит данные для запроса городов и вызывает функцию get_city_id()
