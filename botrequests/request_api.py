@@ -105,7 +105,7 @@ def city_parse(line_text: str) -> str:
     return BeautifulSoup(line_text, 'html.parser').get_text().lower()
 
 
-def req_api(url: str, querystring: dict, lang="en_US") -> dict:
+def req_api(url: str, querystring: dict, lang: str) -> dict:
     """
     Функция возвращает данные запроса к API гостиниц.
     :param url: страница поиска
@@ -144,7 +144,7 @@ def req_api(url: str, querystring: dict, lang="en_US") -> dict:
         return {"error": server_error[lang]["erjson"]}
 
 
-def get_photos(id_photo: str, count: int) -> list:
+def get_photos(id_photo: str, count: int, lang: str) -> list:
     """
     Функция возвращает список ссылок на фотографии отеля. Если не найдены, возвращает пустой список.
     :param id_photo: ID отеля
@@ -154,7 +154,7 @@ def get_photos(id_photo: str, count: int) -> list:
 
     url = config('URL_PHOTOS')
     querystring = {"id": f"{id_photo}"}
-    response = req_api(url, querystring)
+    response = req_api(url, querystring, lang)
     photo_list = []
     if response.get("ok"):
         for photo in response["ok"]["roomImages"]:
@@ -224,7 +224,7 @@ def hotel_query(querystring: dict, parametrs: dict) -> dict:
             if querystring["pageSize"] != hotel_count:
                 photos = []
                 if parametrs['stat_photo']:
-                    data_photo = get_photos(results['id'], parametrs['count_photo'])
+                    data_photo = get_photos(results['id'], parametrs['count_photo'], lang)
                     if len(data_photo) > 0:
                         photos = [link for link in data_photo]
 
