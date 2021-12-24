@@ -86,6 +86,8 @@ def get_text_messages(message: types.Message) -> None:
         f"{datetime.now()} - Неизвестная команда или текст {message.text} от пользователя {message.from_user.id}")
     user[message.chat.id].language = (
         "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
+    bot.set_my_commands(commands=Keyboard().my_commands(user[message.chat.id].language),
+                        scope=types.BotCommandScopeChat(message.chat.id))
     bot.send_message(text=loctxt[user[message.chat.id].language][25] + info_help[user[message.chat.id].language],
                      chat_id=message.from_user.id)
 
