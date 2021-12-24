@@ -62,18 +62,18 @@ def history_message(message: types.Message) -> None:
     user[message.chat.id].language = (
         message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
             message.chat.id].language)
-    bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][11])
     history = user[message.chat.id].history(logging, datetime)
     if len(history) == 0:
         txt = loctxt[user[message.chat.id].language][15]
         bot.send_message(chat_id=message.chat.id, text=txt)
     else:
+        bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][11])
         for elem in history:
             splitted_text = util.smart_split(elem[0], 3000)
             for txt in splitted_text:
                 bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
+        bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][18])
     logging.info(f"{datetime.now()} - Пользователь {message.from_user.id} запросил историю запросов")
-    bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][18])
 
 
 @bot.message_handler(content_types=['text'])
@@ -126,7 +126,8 @@ def ask_search_city(message: types.Message) -> None:
         bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][1])
         m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
         logging.info(
-            f"{datetime.now()} - Для пользователя {message.from_user.id} город {message.text} не найден. Повторение ввода другого города")
+            f"{datetime.now()} - Для пользователя {message.from_user.id} город {message.text} не найден. "
+            f"Повторение ввода другого города")
         bot.register_next_step_handler(m, ask_search_city)
     else:
         logging.info(f"{datetime.now()} - Пользователь {message.chat.id} получил сообщение {city['error']} от сервера")
@@ -138,14 +139,14 @@ def ask_date(message: types.Message, txt: str) -> None:
     :param message: сообщение от пользователя
     :patam txt: текст с предложением ввода даты
     """
+
     lng = user[message.chat.id].language
     logging.info(
         f"{datetime.now()} - Бот {message.from_user.id} предлагает пользователю  {message.chat.id} ввести {txt}")
     m = bot.edit_message_text(text=txt, chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id,
                               parse_mode='MARKDOWN',
-                              reply_markup=MyStyleCalendar(calendar_id=1,
-                                                           locale=lng[:2]).build()[0])
+                              reply_markup=MyStyleCalendar(calendar_id=1, locale=lng[:2]).build()[0])
     user[message.chat.id].message_id = m.message_id
 
 
@@ -318,7 +319,8 @@ def inline(call):
             step_show_info(call.message)
 
     elif call.data.startswith('cbcal_1'):
-        result, key, step = MyStyleCalendar(calendar_id=1).process(call.data)
+        result, key, step = MyStyleCalendar(calendar_id=1, locale=user[call.message.chat.id].language[:2]).process(
+            call.data)
         if not result:
             bot.edit_message_reply_markup(chat_id=call.message.chat.id,
                                           message_id=user[call.message.chat.id].message_id,
