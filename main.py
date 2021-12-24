@@ -7,7 +7,7 @@ from telebot import util
 from botrequests.keyboards import types, Keyboard
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
 from botrequests.user_class import Users
-from botrequests.locales import loctxt, info_help
+from botrequests.locales import loctxt, info_help, welcome
 
 
 class MyStyleCalendar(WYearTelegramCalendar):
@@ -374,7 +374,9 @@ def inline(call):
         bot.delete_message(chat_id=call.message.chat.id, message_id=user[call.message.chat.id].message_id)
         if user[call.message.chat.id].command in ['/start', '/help']:
             logging.info(f"{datetime.now()} - Пользователь {call.message.chat.id} получил помощь")
-            bot.send_message(text=info_help[user[call.message.chat.id].language], chat_id=call.message.chat.id)
+            bot.send_message(
+                text=welcome[user[call.message.chat.id].language] + info_help[user[call.message.chat.id].language],
+                chat_id=call.message.chat.id)
         bot.answer_callback_query(callback_query_id=call.id)
 
     elif call.data.startswith('cbid_'):
