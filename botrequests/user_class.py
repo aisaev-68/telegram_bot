@@ -240,7 +240,7 @@ class Users:
             con = sqlite3.connect('data.db')
             with con:
                 con.execute(
-                    "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, username TEXT, "
+                    "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, name TEXT, "
                     "command TEXT, date TEXT, hotels TEXT);")
 
             txt = ''
