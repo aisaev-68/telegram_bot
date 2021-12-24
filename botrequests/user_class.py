@@ -273,3 +273,4 @@ class Users:
                 return rows
         except Error:
             logging.error(f"{datetime.now()} - Функция insert_db - {Error}")
+
