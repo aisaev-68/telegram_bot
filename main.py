@@ -63,18 +63,10 @@ def history_message(message: types.Message) -> None:
     user[message.chat.id].language = (
         message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
             message.chat.id].language)
-    history = user[message.chat.id].history(logging)
-    if len(history) == 0:
-        txt = loctxt[user[message.chat.id].language][15]
-        bot.send_message(chat_id=message.chat.id, text=txt)
-    else:
-        bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][11])
-        for elem in history:
-            splitted_text = util.smart_split(elem[0], 3000)
-            for txt in splitted_text:
-                bot.send_message(chat_id=message.chat.id, text=txt, disable_web_page_preview=True, parse_mode="HTML")
-        bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][18])
     logging.info(f"Пользователь {message.from_user.id} запросил историю запросов")
+    m = bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][11],
+                         reply_markup=Keyboard().requests_numb(user[message.chat.id].language))
+    user[message.chat.id].message_id = m.message_id
 
 
 @bot.message_handler(content_types=['text'])
@@ -305,6 +297,20 @@ def send_hotels_chat(message: types.Message):
                          parse_mode="HTML")
 
 
+def history_req(message: types.Message, numb: int) -> None:
+    history = user[message.chat.id].history(logging, numb)
+    if len(history) == 0:
+        txt = loctxt[user[message.chat.id].language][15]
+        bot.edit_message_text(chat_id=message.chat.id, text=txt, message_id=user[message.chat.id].message_id)
+    else:
+        for elem in history:
+            splitted_text = util.smart_split(elem[0], 3000)
+            for txt in splitted_text:
+                bot.edit_message_text(chat_id=message.chat.id, text=txt, message_id=user[message.chat.id].message_id,
+                                      disable_web_page_preview=True, parse_mode="HTML")
+        bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][18])
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def inline(call):
     """Обработчик call инлайн клавиатуры
@@ -368,6 +374,14 @@ def inline(call):
                      f"{user[call.message.chat.id].count_show_photo} фото для загрузки")
         bot.answer_callback_query(callback_query_id=call.id)
         step_show_info(call.message)
+
+    elif call.data in ["one_req", "two_req", "three_req", "four_req", "five_req"]:
+        numbers_req = {"one_req": 1, "two_req": 2, "three_req": 3, "four_req": 4, "five_req": 5}
+        logging.info(f"Пользователь {call.message.chat.id} выбрал "
+                     f"{numbers_req[call.data]} запросов для показа")
+
+        bot.answer_callback_query(callback_query_id=call.id)
+        history_req(call.message, numbers_req[call.data])
 
     elif call.data in ['ru_RU', 'en_US']:
         user[call.message.chat.id].language = call.data

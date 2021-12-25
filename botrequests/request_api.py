@@ -177,15 +177,13 @@ def get_city_id(querystring: dict) -> dict:
     result_id_city = req_api(config('URL'), querystring, lang)
 
     if result_id_city.get("ok"):
-        if result_id_city["ok"]["moresuggestions"] > 0:
-            parse_city = {}
-            for city in result_id_city["ok"]['suggestions']:
-                if city['group'] == 'CITY_GROUP':
-                    for name in city['entities']:
-                        parse_city[name['destinationId']] = city_parse(name['caption']).title()
-            return {"city": parse_city}
-        else:
-            return {'empty': None}
+        parse_city = {}
+        for city in result_id_city["ok"]['suggestions']:
+            if city['group'] == 'CITY_GROUP':
+                for name in city['entities']:
+                    parse_city[name['destinationId']] = city_parse(name['caption']).title()
+                return {"city": parse_city}
+        return {'empty': None}
     else:
         return result_id_city
 
@@ -221,7 +219,10 @@ def hotel_query(querystring: dict, parametrs: dict) -> dict:
         all_hotels = {}
         for hotel_count, results in enumerate(low_data):
             txt = ''
-            price = price_parse(results["ratePlan"], lang, querystring['checkIn'], querystring['checkOut'])
+            price = {'day': diff_date(querystring['checkIn'], querystring['checkOut']),
+                     'price_total': loc_txt[lang][12], 'price_day': loc_txt[lang][12]}
+            if results.get('ratePlan'):
+                price = price_parse(results["ratePlan"], lang, querystring['checkIn'], querystring['checkOut'])
             if querystring["pageSize"] != hotel_count:
                 photos = []
                 if parametrs['stat_photo']:

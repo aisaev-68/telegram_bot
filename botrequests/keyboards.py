@@ -63,6 +63,19 @@ class Keyboard:
         self.__markup.add(types.InlineKeyboardButton(text=hotel_kbd[lang][2], callback_data='Cancel_process'))
         return self.__markup
 
+    def requests_numb(self, lang: str) -> types.InlineKeyboardMarkup:
+        """ Функция инлайн кнопок для выбора количества выводимых фото
+        """
+        self.__markup.row_width = 5
+        self.__markup.add(types.InlineKeyboardButton(text='1', callback_data='one_req'),
+                          types.InlineKeyboardButton(text='2', callback_data='two_req'),
+                          types.InlineKeyboardButton(text='3', callback_data='three_req'),
+                          types.InlineKeyboardButton(text='4', callback_data='four_req'),
+                          types.InlineKeyboardButton(text='5', callback_data='five_req'))
+        self.__markup.row_width = 1
+        self.__markup.add(types.InlineKeyboardButton(text=hotel_kbd[lang][2], callback_data='Cancel_process'))
+        return self.__markup
+
     @classmethod
     def my_commands(cls, lng: str) -> [types.BotCommand]:
         """ Функция возвращает каманды на языке пользователя

@@ -255,7 +255,7 @@ class Users:
         except Error:
             logging.error(f"Функция insert_db - {Error}")
 
-    def history(self, logging) -> list:
+    def history(self, logging, numb: int) -> list:
         """Функция возвращет историю запросов пользователя (команда,
         дата запроса, список найденных гостиниц без фото (три последние запросы с ответами)
         """
@@ -269,7 +269,7 @@ class Users:
                 cur = con.cursor()
                 cur.execute(
                     "SELECT hotels FROM users WHERE user_id ={} "
-                    "ORDER BY rowid DESC LIMIT 3;".format(self.__id_user))
+                    "ORDER BY rowid DESC LIMIT {};".format(self.__id_user, numb))
                 rows = cur.fetchall()
                 return rows
         except Error:
