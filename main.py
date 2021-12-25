@@ -134,7 +134,7 @@ def ask_date(message: types.Message, txt: str) -> None:
 
     lng = user[message.chat.id].language
     logging.info(
-        f"Бот {message.from_user.id} предлагает пользователю  {message.chat.id} ввести {txt}")
+        f"Бот {message.from_user.id} предлагает пользователю {message.chat.id} ввести {txt}")
     m = bot.edit_message_text(text=txt, chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id,
                               parse_mode='MARKDOWN',
@@ -294,6 +294,10 @@ def send_hotels_chat(message: types.Message):
 
 
 def history_req(message: types.Message, numb: int) -> None:
+    """Функция выводит в чат историю запросов
+    :param message: сообщение от пользователя
+    :param numb: количество запросов, которые необходимо вывести в чат
+    """
     history = user[message.chat.id].history(logging, numb)
     if len(history) == 0:
         txt = loctxt[user[message.chat.id].language][15]
