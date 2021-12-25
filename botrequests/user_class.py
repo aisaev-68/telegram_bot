@@ -253,9 +253,9 @@ class Users:
                              f"<strong>{d_loc[lng][0]} {self.__command}\n{d_loc[lng][1]} "
                              f"{str(datetime.now())}</strong>\n{txt}"))
         except Error:
-            logging.error(f"{datetime.now()} - Функция insert_db - {Error}")
+            logging.error(f"Функция insert_db - {Error}")
 
-    def history(self, logging, datetime) -> list:
+    def history(self, logging) -> list:
         """Функция возвращет историю запросов пользователя (команда,
         дата запроса, список найденных гостиниц без фото (три последние запросы с ответами)
         """
@@ -273,4 +273,4 @@ class Users:
                 rows = cur.fetchall()
                 return rows
         except Error:
-            logging.error(f"{datetime.now()} - Функция history - {Error}")
+            logging.error(f"Функция history - {Error}")

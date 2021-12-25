@@ -10,7 +10,9 @@ from bs4 import BeautifulSoup
 
 bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
-logging.basicConfig(filename="logger.log", level=logging.INFO)
+logging.basicConfig(filename="logger.log", level=logging.INFO,
+                    format="%(asctime)s - %(module)s - %(levelname)s - %(funcName)s: %(lineno)d - %(message)s",
+                    datefmt='%H:%M:%S')
 
 user: dict = {}
 
@@ -127,20 +129,20 @@ def req_api(url: str, querystring: dict, lang: str) -> dict:
         else:
             if json.loads(response.text).get("message"):
                 logging.error(
-                    f"{datetime.now()} - Функция req_api - Превышена ежемесячная квота для запросов по плану BASIC.")
+                    "Функция req_api - Превышена ежемесячная квота для запросов по плану BASIC.")
                 return {"error": server_error[lang]["quota"]}
             else:
-                logging.error(f"{datetime.now()} - Функция req_api - Что-то пошло не так. Повторите позже.")
+                logging.error("Функция req_api - Что-то пошло не так. Повторите позже.")
                 return {"error": server_error[lang]["erhttp"]}
     except ConnectionError as ercon:
-        logging.error(f"{datetime.now()} - {ercon} - Функция req_api - Нет, соединения с сервисом.")
+        logging.error(f"{ercon} - Функция req_api - Нет, соединения с сервисом.")
         return {"error": server_error[lang]["ercon"]}
     except Timeout as ertime:
-        logging.error(f"{datetime.now()} - {ertime} - Функция req_api - Время ожидания запроса истекло")
+        logging.error(f"{ertime} - Функция req_api - Время ожидания запроса истекло")
         return {"error": server_error[lang]["ertime"]}
     except json.decoder.JSONDecodeError as erjson:
         logging.error(
-            f"{datetime.now()} - {erjson} - Функция req_api - Получены некорректные данные от сервиса.")
+            f"{erjson} - Функция req_api - Получены некорректные данные от сервиса.")
         return {"error": server_error[lang]["erjson"]}
 
 
