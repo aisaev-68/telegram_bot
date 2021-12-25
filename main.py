@@ -306,8 +306,8 @@ def history_req(message: types.Message, numb: int) -> None:
         for elem in history:
             splitted_text = util.smart_split(elem[0], 3000)
             for txt in splitted_text:
-                bot.edit_message_text(chat_id=message.chat.id, text=txt, message_id=user[message.chat.id].message_id,
-                                      disable_web_page_preview=True, parse_mode="HTML")
+                bot.send_message(chat_id=message.chat.id, text=txt,
+                                 disable_web_page_preview=True, parse_mode="HTML")
         bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][18])
 
 
