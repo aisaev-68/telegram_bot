@@ -12,7 +12,7 @@ bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
 logging.basicConfig(filename="logger.log", level=logging.INFO,
                     format="%(asctime)s - %(module)s - %(levelname)s - %(funcName)s: %(lineno)d - %(message)s",
-                    datefmt='%d-%m-%y %H:%M:%S')
+                    datefmt='%d-%b-%y %H:%M:%S')
 
 user: dict = {}
 
