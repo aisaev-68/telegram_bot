@@ -2,8 +2,9 @@
 
 import re
 from botrequests.request_api import hotel_query, get_city_id, \
-    user, bot, datetime, logging
+    user, bot, logging
 from telebot import util
+from datetime import datetime
 from botrequests.keyboards import types, Keyboard
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
 from botrequests.user_class import Users
@@ -184,10 +185,11 @@ def price_min_max(message: types.Message) -> None:
             price_min, price_max = price_max, price_min
         user[message.chat.id].price_min = price_min
         user[message.chat.id].price_max = price_max
+
         m = bot.send_message(text=loctxt[user[message.chat.id].language][23],
                              chat_id=message.chat.id)
-        logging.info(f"Бот {message.from_user.id} предлагает пользователю  {message.chat.id}"
-                     f" ввести через пробел диапазон цен")
+        logging.info(f"Бот {m.from_user.id} предлагает пользователю {m.chat.id} "
+                     f"ввести через пробел диапазон расстояния до центра")
         bot.register_next_step_handler(m, distance_min_max)
     except Exception as er:
         logging.error(f"{er} - Функция price_min_max - Ошибка ввода мин- макс. цены")
@@ -215,8 +217,6 @@ def distance_min_max(message: types.Message) -> None:
                              chat_id=message.chat.id)
             user[message.chat.id].distance_max, user[message.chat.id].distance_min = user[message.chat.id].distance_min, \
                                                                                      user[message.chat.id].distance_max
-        logging.info(f"Бот {message.from_user.id} предлагает пользователю {message.chat.id} "
-                     f"ввести через пробел диапазон расстояния до центра")
         send_hotels_chat(message)
 
     except Exception as er:
@@ -259,6 +259,8 @@ def step_show_info(message: types.Message) -> None:
     command = user[message.chat.id].command
     bot.delete_message(chat_id=message.chat.id, message_id=user[message.chat.id].message_id)
     if command == '/bestdeal':
+        logging.info(f"Бот {message.from_user.id} предлагает пользователю  {message.chat.id}"
+                     f" ввести через пробел диапазон цен")
         bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][20])
         logging.info(f"Бот {message.from_user.id} вызвал функцию price_min_max")
 
@@ -272,8 +274,9 @@ def send_hotels_chat(message: types.Message):
     """Функция вывода в чат информации о отелях
     :param message: объект входящего сообщения от пользователя
     """
-    msg = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
-    user[message.chat.id].message_id = msg.message_id
+    logging.info(f"Вывод в чат информации о отелях - функция send_hotels_chat")
+    bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
+    # user[message.chat.id].message_id = message.message_id
     query_str = user[message.chat.id].query_string()
     data = hotel_query(query_str, user[message.chat.id].get_param())
 
@@ -283,18 +286,17 @@ def send_hotels_chat(message: types.Message):
                 links_photo = [types.InputMediaPhoto(media=link) for link in photo]
                 try:
                     bot.send_media_group(chat_id=message.chat.id, media=links_photo)
-                    logging.info(f"Бот {message.from_user.id} отправил в чат фото")
                 except Exception as er:
                     logging.error(f"{er} - Функция send_hotels_chat - Отправка фото")
             try:
-                logging.info(f"Бот {message.from_user.id} отправил в чат отели")
                 bot.send_message(chat_id=message.chat.id, text=hotel,
                                  disable_web_page_preview=True,
                                  parse_mode="HTML")
             except Exception as e:
                 logging.error(f"{e} - Функция send_hotels_chat - Отправка гостиниц")
+        logging.info(f"Пользователю {message.chat.id} отправлены в чат фото и отели")
         user[message.chat.id].insert_db(data, logging, datetime)
-        logging.info(f"Бот {message.from_user.id} отправил данные в базу")
+        logging.info(f"Сформированные для {message.chat.id} данные отправлены в базу")
         bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][13].format(len(data)))
     else:
         logging.error(f"Пользователь {message.chat.id} получил сообщение от сервера {data['error']}")

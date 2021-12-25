@@ -4,7 +4,6 @@ from decouple import config
 import json
 from telebot import TeleBot
 from requests import request, ConnectionError, Timeout
-from datetime import datetime
 import logging
 from bs4 import BeautifulSoup
 
