@@ -114,7 +114,7 @@ def ask_search_city(message: types.Message) -> None:
         bot.edit_message_text(text=loctxt[user[message.chat.id].language][3], chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id,
                               parse_mode='HTML', reply_markup=markup)
-    elif city.get('empty') == None:
+    elif city.get('empty'):
         command = user[message.from_user.id].command
         user[message.chat.id].clearCache()
         user[message.chat.id].command = command

@@ -121,7 +121,7 @@ def req_api(url: str, querystring: dict, lang: str) -> dict:
     }
     try:
 
-        response = request("GET", url, headers=headers, params=querystring)
+        response = request("GET", url, headers=headers, params=querystring, timeout=15)
         if response.status_code == 200:
             data = json.loads(response.text)
             return {"ok": data}
