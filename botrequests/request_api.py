@@ -12,7 +12,7 @@ bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 
 logging.basicConfig(filename="logger.log", level=logging.INFO,
                     format="%(asctime)s - %(module)s - %(levelname)s - %(funcName)s: %(lineno)d - %(message)s",
-                    datefmt='%d-%b-%y %H:%M:%S')
+                    datefmt='%d-%m-%y %H:%M:%S')
 
 user: dict = {}
 
@@ -73,7 +73,7 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
                 price_total = round(price_day * float(day), 2)
                 return {'day': day, 'price_total': price_total, 'price_day': price_day}
         except Exception as er:
-            logging.error(f"{datetime.now()} - {er} - Функция price_parse (русский язык)")
+            logging.error(f"{er} - Функция price_parse (русский язык)")
     else:
         try:
 
@@ -96,7 +96,7 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
                 price_total = round(price_day * float(day), 2)
                 return {'day': day, 'price_total': price_total, 'price_day': price_day}
         except Exception as er:
-            logging.error(f"{datetime.now()} - {er} - Функция price_parse (английски язык)")
+            logging.error(f"{er} - Функция price_parse (английски язык)")
 
 
 def city_parse(line_text: str) -> str:
