@@ -46,10 +46,8 @@ def command_message(message: types.Message) -> None:
     """
     add_user(message)
     user[message.chat.id].command = message.text.lower()
-    if user[message.chat.id].language == '':
-        user[message.chat.id].language = (
-            message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
-                message.chat.id].language)
+    user[message.chat.id].language = (
+        message.from_user.language_code + "_RU" if message.from_user.language_code == 'ru' else 'en_US')
     logging.info(f"Пользователь {message.from_user.id} выбрал команду {message.text}")
     m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
     bot.register_next_step_handler(m, ask_search_city)
@@ -61,8 +59,7 @@ def history_message(message: types.Message) -> None:
     """
     add_user(message)
     user[message.chat.id].language = (
-        message.from_user.language_code + "_RU" if not user[message.chat.id].language else user[
-            message.chat.id].language)
+        message.from_user.language_code + "_RU" if message.from_user.language_code == 'ru' else 'en_US')
     logging.info(f"Пользователь {message.from_user.id} запросил историю запросов")
     m = bot.send_message(chat_id=message.chat.id, text=loctxt[user[message.chat.id].language][11],
                          reply_markup=Keyboard().requests_numb(user[message.chat.id].language))
@@ -268,7 +265,6 @@ def send_hotels_chat(message: types.Message):
     """
     logging.info(f"Вывод в чат информации о отелях - функция send_hotels_chat")
     bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][0])
-    # user[message.chat.id].message_id = message.message_id
     query_str = user[message.chat.id].query_string()
     data = hotel_query(query_str, user[message.chat.id].get_param())
 
