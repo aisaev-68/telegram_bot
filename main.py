@@ -2,13 +2,16 @@
 
 import re
 from botrequests.request_api import hotel_query, get_city_id, \
-    user, bot, logging
-from telebot import util
+    config, logging
+from telebot import TeleBot, util
 from datetime import datetime
 from botrequests.keyboards import types, Keyboard
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
 from botrequests.user_class import Users
 from botrequests.locales import loctxt, info_help, welcome
+
+bot = TeleBot(config('TELEGRAM_API_TOKEN'))
+user: dict = {}
 
 
 class MyStyleCalendar(WYearTelegramCalendar):
@@ -90,6 +93,7 @@ def ask_search_city(message: types.Message) -> None:
     """
     user[message.from_user.id].message_id = message.message_id
     user[message.chat.id].search_city = message.text.lower()
+    logging.info(f"Пользователь {message.from_user.id} выбрал город {message.text}")
     user[message.chat.id].language = (
         "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
     user[message.chat.id].currency = ('RUB' if user[message.chat.id].language == 'ru_RU' else 'USD')
@@ -111,7 +115,8 @@ def ask_search_city(message: types.Message) -> None:
         bot.edit_message_text(text=loctxt[user[message.chat.id].language][3], chat_id=message.chat.id,
                               message_id=user[message.chat.id].message_id,
                               parse_mode='HTML', reply_markup=markup)
-    elif city.get('empty'):
+
+    elif city.get('empty') or not city.get('city'):
         command = user[message.from_user.id].command
         user[message.chat.id].clearCache()
         user[message.chat.id].command = command
@@ -119,7 +124,7 @@ def ask_search_city(message: types.Message) -> None:
         m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
         logging.info(
             f"Для пользователя {message.from_user.id} город {message.text} не найден. "
-            f"Повторение ввода другого города")
+            f"Пользователь ввел другой город")
         bot.register_next_step_handler(m, ask_search_city)
     else:
         logging.info(f"Пользователь {message.chat.id} получил сообщение {city['error']} от сервера")

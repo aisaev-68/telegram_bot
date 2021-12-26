@@ -2,18 +2,16 @@
 
 from decouple import config
 import json
-from telebot import TeleBot
 from requests import request, ConnectionError, Timeout
 import logging
 from bs4 import BeautifulSoup
 
-bot = TeleBot(config('TELEGRAM_API_TOKEN'))
+
 
 logging.basicConfig(filename="logger.log", level=logging.INFO,
                     format="%(asctime)s - %(module)s - %(levelname)s - %(funcName)s: %(lineno)d - %(message)s",
                     datefmt='%d-%b-%y %H:%M:%S')
 
-user: dict = {}
 
 server_error = {"ru_RU": {"ertime": "Время ожидания запроса истекло. Попробуйте позже.",
                           "erjson": "Получен некорректный ответ от сервиса. Попробуйте позже.",
