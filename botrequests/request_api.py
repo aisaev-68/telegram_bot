@@ -177,7 +177,8 @@ def get_city_id(querystring: dict) -> dict:
     if result_id_city.get("ok"):
         parse_city = {}
         for city in result_id_city["ok"]['suggestions']:
-            if city['group'] == 'CITY_GROUP':
+            #if city['group'] == 'CITY_GROUP':
+            if city['group'] in ['CITY_GROUP', 'CITY']:
                 for name in city['entities']:
                     parse_city[name['destinationId']] = city_parse(name['caption']).title()
                 return {"city": parse_city}
