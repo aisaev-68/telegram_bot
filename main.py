@@ -377,6 +377,7 @@ def inline(call):
 
     elif call.data in ["one_req", "two_req", "three_req", "four_req", "five_req"]:
         numbers_req = {"one_req": 1, "two_req": 2, "three_req": 3, "four_req": 4, "five_req": 5}
+        bot.delete_message(chat_id=call.message.chat.id, message_id=user[call.message.chat.id].message_id)
         logging.info(f"Пользователь {call.message.chat.id} выбрал "
                      f"{numbers_req[call.data]} запросов для показа")
 
