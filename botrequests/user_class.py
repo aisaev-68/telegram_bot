@@ -3,6 +3,15 @@
 
 import sqlite3
 from sqlite3 import Error
+from telegram_bot_calendar import WYearTelegramCalendar, DAY
+
+
+class MyStyleCalendar(WYearTelegramCalendar):
+    """ Класс календаря с выбором дня месяца
+    """
+    first_step = DAY
+    prev_button = "⬅️"
+    next_button = "➡️"
 
 
 class Users:

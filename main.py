@@ -1,25 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import re
-from botrequests.request_api import hotel_query, get_city_id, \
-    config, logging
+from botrequests.request_api import hotel_query, get_city_id, config, logging
 from telebot import TeleBot, util
 from datetime import datetime
 from botrequests.keyboards import types, Keyboard
-from telegram_bot_calendar import WYearTelegramCalendar, DAY
-from botrequests.user_class import Users
+from botrequests.user_class import Users, MyStyleCalendar
 from botrequests.locales import loctxt, info_help, welcome
 
 bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 user: dict = {}
-
-
-class MyStyleCalendar(WYearTelegramCalendar):
-    """ Класс календаря с выбором дня месяца
-    """
-    first_step = DAY
-    prev_button = "⬅️"
-    next_button = "➡️"
 
 
 def add_user(message) -> None:
