@@ -83,7 +83,7 @@ def ask_search_city(message: types.Message) -> None:
     """
     user[message.from_user.id].message_id = message.message_id
     user[message.chat.id].search_city = message.text.lower()
-    logging.info(f"Пользователь {message.from_user.id} выбрал город {message.text}")
+    logging.info(f"Пользователь {message.from_user.id} ввел город {message.text} для поиска")
     user[message.chat.id].language = (
         "ru_RU" if re.findall(r'[А-Яа-яЁё -]', re.sub(r'[- ]', '', message.text.lower())) else "en_US")
     user[message.chat.id].currency = ('RUB' if user[message.chat.id].language == 'ru_RU' else 'USD')
@@ -106,7 +106,7 @@ def ask_search_city(message: types.Message) -> None:
                               message_id=user[message.chat.id].message_id,
                               parse_mode='HTML', reply_markup=markup)
 
-    elif city.get('empty') or not city.get('city'):
+    elif city.get('empty'):
         command = user[message.from_user.id].command
         user[message.chat.id].clearCache()
         user[message.chat.id].command = command

@@ -182,7 +182,7 @@ def get_city_id(querystring: dict) -> dict:
                 for name in city['entities']:
                     parse_city[name['destinationId']] = city_parse(name['caption']).title()
                 return {"city": parse_city}
-        return {'empty': None}
+        return {'empty': 1}
     else:
         return result_id_city
 
