@@ -4,14 +4,12 @@ from decouple import config
 import json
 from requests import request, ConnectionError, Timeout
 import logging
+from logging.handlers import RotatingFileHandler
 from bs4 import BeautifulSoup
 
-
-
-logging.basicConfig(filename="logger.log", level=logging.INFO,
+logging.basicConfig(handlers=[RotatingFileHandler('logger.log', maxBytes=100000, backupCount=10)], level=logging.INFO,
                     format="%(asctime)s - %(module)s - %(levelname)s - %(funcName)s: %(lineno)d - %(message)s",
                     datefmt='%d-%b-%y %H:%M:%S')
-
 
 server_error = {"ru_RU": {"ertime": "Время ожидания запроса истекло. Попробуйте позже.",
                           "erjson": "Получен некорректный ответ от сервиса. Попробуйте позже.",
@@ -177,7 +175,7 @@ def get_city_id(querystring: dict) -> dict:
     if result_id_city.get("ok"):
         parse_city = {}
         for city in result_id_city["ok"]['suggestions']:
-            #if city['group'] == 'CITY_GROUP':
+            # if city['group'] == 'CITY_GROUP':
             if city['group'] in ['CITY_GROUP', 'CITY']:
                 for name in city['entities']:
                     parse_city[name['destinationId']] = city_parse(name['caption']).title()

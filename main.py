@@ -8,6 +8,7 @@ from botrequests.keyboards import types, Keyboard
 from botrequests.user_class import Users, MyStyleCalendar
 from botrequests.locales import loctxt, info_help, welcome
 
+
 bot = TeleBot(config('TELEGRAM_API_TOKEN'))
 user: dict = {}
 
