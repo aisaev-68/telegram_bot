@@ -211,7 +211,7 @@ def distance_min_max(message: types.Message) -> None:
         bot.register_next_step_handler(msg, distance_min_max)
 
 
-def ask_show_photo(message: types.Message):
+def ask_show_photo(message: types.Message) -> None:
     """Функция предлагает показ фотографии отелей
     :param message: входящее сообщение от пользователя
     """
@@ -255,7 +255,7 @@ def step_show_info(message: types.Message) -> None:
         send_hotels_chat(message)
 
 
-def send_hotels_chat(message: types.Message):
+def send_hotels_chat(message: types.Message) -> None:
     """Функция вывода в чат информации о отелях
     :param message: объект входящего сообщения от пользователя
     """
@@ -308,7 +308,7 @@ def history_req(message: types.Message, numb: int) -> None:
 
 
 @bot.callback_query_handler(func=lambda call: True)
-def inline(call):
+def inline(call) -> None:
     """Обработчик call инлайн клавиатуры
     """
     if call.data in ['yes_photo', 'no_photo']:
