@@ -75,14 +75,12 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
             if line_text['price'].get('fullyBundledPricePerStay'):
                 pr = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()
                 if len(pr) > 2:
-                    day = \
-                        BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[
-                            3]
+                    day = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'],
+                                        'html.parser').get_text().split()[3]
                 else:
                     day = diff_date(checkIn, checkOut)
-                price_total = \
-                    BeautifulSoup(line_text['price']['fullyBundledPricePerStay'], 'html.parser').get_text().split()[1][
-                    1:].replace(',', '')
+                price_total = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'],
+                                            'html.parser').get_text().split()[1][1:].replace(',', '')
                 price_day = round(float(price_total) / float(day), 2)
                 return {'day': day, 'price_total': price_total, 'price_day': price_day}
             else:
@@ -108,7 +106,7 @@ def req_api(url: str, querystring: dict, lang: str) -> dict:
     :param url: страница поиска
     :param querystring: срока запроса
     :param lng: язык пользователя
-    :return data: возвращаемые API данные
+    :return data: возвращаемые API данные  в виде словаря
     """
 
     headers = {
@@ -146,7 +144,7 @@ def get_photos(id_photo: str, count: int, lang: str) -> list:
     Функция возвращает список ссылок на фотографии отеля. Если не найдены, возвращает пустой список.
     :param id_photo: ID отеля
     :param count: количество фото для загрузки
-    :return photo_list: список ссылок на фотографии отеля
+    :return photo_list: список ссылок на фотографии отеля в виде списка
     """
 
     url = config('URL_PHOTOS')
