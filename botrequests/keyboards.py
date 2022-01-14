@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from telebot import types
 
 hotel_kbd = {'ru_RU': ['Да', 'Нет', 'Отмена'], 'en_US': ['Yes', 'No', 'Cancel']}

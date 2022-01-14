@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import re
 from botrequests.request_api import hotel_query, get_city_id, config, logging
 from telebot import TeleBot, util
@@ -19,12 +17,13 @@ def add_user(message) -> None:
     if not user.get(message.from_user.id):
         user[message.from_user.id] = Users(message)
         logging.info(f"Добавление пользователя {message.from_user.id}")
-    user[message.chat.id].clearCache()
+    user[message.chat.id].clear_cache()
 
 
 @bot.message_handler(commands=["help", "start"])
 def help_start_message(message: types.Message) -> None:
     """Функция для обработки команд "help", "start"
+    :param message: сообщение
     """
     add_user(message)
     user[message.chat.id].command = message.text.lower()
@@ -37,6 +36,7 @@ def help_start_message(message: types.Message) -> None:
 @bot.message_handler(commands=["lowprice", "highprice", "bestdeal"])
 def command_message(message: types.Message) -> None:
     """Функция для обработки команд "lowprice", "highprice", "bestdeal"
+    :param message: сообщение
     """
     add_user(message)
     user[message.chat.id].command = message.text.lower()
@@ -50,6 +50,7 @@ def command_message(message: types.Message) -> None:
 @bot.message_handler(commands=["history"])
 def history_message(message: types.Message) -> None:
     """Функция для обработки команды вывода истории
+    :param message: сообщение
     """
     add_user(message)
     user[message.chat.id].language = (
@@ -64,6 +65,7 @@ def history_message(message: types.Message) -> None:
 def get_text_messages(message: types.Message) -> None:
     """Функция слушает все входящие сообщения и если
     не знакомы выдает сообщения и строку помощи
+    :param message: сообщение
     """
     add_user(message)
     logging.info(
@@ -109,7 +111,7 @@ def ask_search_city(message: types.Message) -> None:
 
     elif city.get('empty'):
         command = user[message.from_user.id].command
-        user[message.chat.id].clearCache()
+        user[message.chat.id].clear_cache()
         user[message.chat.id].command = command
         bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][1])
         m = bot.send_message(message.chat.id, loctxt[user[message.chat.id].language][2])
@@ -125,7 +127,7 @@ def ask_search_city(message: types.Message) -> None:
 def ask_date(message: types.Message, txt: str) -> None:
     """Функция предлагает ввести дату
     :param message: сообщение от пользователя
-    :patam txt: текст с предложением ввода даты
+    :param txt: текст с предложением ввода даты
     """
 
     lng = user[message.chat.id].language
@@ -333,20 +335,20 @@ def inline(call) -> None:
                                           reply_markup=key)
 
         elif result:
-            if not user[call.message.chat.id].checkIn:
-                user[call.message.chat.id].checkIn = result.strftime('%Y-%m-%d')
+            if not user[call.message.chat.id].check_in:
+                user[call.message.chat.id].check_in = result.strftime('%Y-%m-%d')
                 logging.info(f"Пользователь {call.message.chat.id} выбрал дату заезда "
-                             f"{user[call.message.chat.id].checkIn}")
+                             f"{user[call.message.chat.id].check_in}")
                 bot.answer_callback_query(callback_query_id=call.id,
                                           text=loctxt[user[call.message.chat.id].language][9])
                 ask_date(call.message, loctxt[user[call.message.chat.id].language][5])
 
             else:
 
-                user[call.message.chat.id].checkOut = result.strftime('%Y-%m-%d')
-                if user[call.message.chat.id].checkOut > user[call.message.chat.id].checkIn:
+                user[call.message.chat.id].check_out = result.strftime('%Y-%m-%d')
+                if user[call.message.chat.id].check_out > user[call.message.chat.id].check_in:
                     logging.info(f"Пользователь {call.message.chat.id} выбрал дату выезда "
-                                 f"{user[call.message.chat.id].checkOut}")
+                                 f"{user[call.message.chat.id].check_out}")
                     ask_count_hotels(call.message)
                     bot.answer_callback_query(callback_query_id=call.id,
                                               text=loctxt[user[call.message.chat.id].language][10])

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from decouple import config
 import json
 from requests import request, ConnectionError, Timeout
@@ -35,25 +33,27 @@ loc_txt = {'ru_RU':
            }
 
 
-def diff_date(checkIn: str, checkOut: str) -> int:
+def diff_date(check_in: str, check_out: str) -> int:
     """
     Функция определения количества суток проживания по датам заезда и выезда
+    :param check_in: дата заезда
+    :param check_out: дата выезда
     :return: возвращает количество суток
     """
     import datetime
-    a = checkIn.split('-')
-    b = checkOut.split('-')
+    a = check_in.split('-')
+    b = check_out.split('-')
     d = str(datetime.date(int(b[0]), int(b[1]), int(b[2])) - datetime.date(int(a[0]), int(a[1]), int(a[2])))
     return int(d.split()[0])
 
 
-def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> dict:
+def price_parse(line_text: dict, language: str, check_in: str, check_out: str) -> dict:
     """Функция возвращает из полученной строки кол-во дней, обшую сумму и цену за сутки в виде словаря
     {'day': day, 'price_total': price_total, 'price_day': price_day}
     :param line_text: строка для парсинга
     :param language: язык пользователя
-    :param checkIn: дата заезда
-    :param checkOut: дата выезда"""
+    :param check_in: дата заезда
+    :param check_out: дата выезда"""
 
     if language == 'ru_RU':
         try:
@@ -63,7 +63,7 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
                 price_day = round(price_total / float(day), 2)
                 return {'day': day, 'price_total': price_total, 'price_day': price_day}
             else:
-                day = diff_date(checkIn, checkOut)
+                day = diff_date(check_in, check_out)
                 price_day = line_text['price']['exactCurrent']
                 price_total = round(price_day * float(day), 2)
                 return {'day': day, 'price_total': price_total, 'price_day': price_day}
@@ -78,13 +78,13 @@ def price_parse(line_text: dict, language: str, checkIn: str, checkOut: str) -> 
                     day = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'],
                                         'html.parser').get_text().split()[3]
                 else:
-                    day = diff_date(checkIn, checkOut)
+                    day = diff_date(check_in, check_out)
                 price_total = BeautifulSoup(line_text['price']['fullyBundledPricePerStay'],
                                             'html.parser').get_text().split()[1][1:].replace(',', '')
                 price_day = round(float(price_total) / float(day), 2)
                 return {'day': day, 'price_total': price_total, 'price_day': price_day}
             else:
-                day = diff_date(checkIn, checkOut)
+                day = diff_date(check_in, check_out)
                 price_day = line_text['price']['exactCurrent']
                 price_total = round(price_day * float(day), 2)
                 return {'day': day, 'price_total': price_total, 'price_day': price_day}
@@ -105,7 +105,7 @@ def req_api(url: str, querystring: dict, lang: str) -> dict:
     Функция возвращает данные запроса к API гостиниц.
     :param url: страница поиска
     :param querystring: срока запроса
-    :param lng: язык пользователя
+    :param lang: язык пользователя
     :return data: возвращаемые API данные  в виде словаря
     """
 
@@ -144,6 +144,7 @@ def get_photos(id_photo: str, count: int, lang: str) -> list:
     Функция возвращает список ссылок на фотографии отеля. Если не найдены, возвращает пустой список.
     :param id_photo: ID отеля
     :param count: количество фото для загрузки
+    :param lang: язык пользователя
     :return photo_list: список ссылок на фотографии отеля в виде списка
     """
 
@@ -163,9 +164,8 @@ def get_photos(id_photo: str, count: int, lang: str) -> list:
 
 def get_city_id(querystring: dict) -> dict:
     """
-    Функция запрашивает информацию для вывода в чат городов.
+    Функция запрашивает информацию для вывода в чат городов.Возвращает ID городов.
     :param querystring: строка запроса в виде словаря {'query': 'минск', 'locale': 'ru_RU'}
-    :param message: сообщение
     """
     lang = querystring['locale']
     result_id_city = req_api(config('URL'), querystring, lang)
@@ -173,7 +173,6 @@ def get_city_id(querystring: dict) -> dict:
     if result_id_city.get("ok"):
         parse_city = {}
         for city in result_id_city["ok"]['suggestions']:
-            # if city['group'] == 'CITY_GROUP':
             if city['group'] in ['CITY_GROUP', 'CITY']:
                 for name in city['entities']:
                     parse_city[name['destinationId']] = city_parse(name['caption']).title()
@@ -183,32 +182,32 @@ def get_city_id(querystring: dict) -> dict:
         return result_id_city
 
 
-def hotel_query(querystring: dict, parametrs: dict) -> dict:
+def hotel_query(querystring: dict, par_dict: dict) -> dict:
     """
     Формирует словарь отелей на основе запроса пользователя и сортировкой по цене.
     Если отелей не найдено возвращает пустой словарь.
     :param querystring: строка запроса в виде словаря
-    :param parametrs: словарь с дистанцией и ценой, командой
-    :return result_low: возвращает словарь (название отеля, адрес,
+    :param par_dict: словарь с дистанцией и ценой, командой
+    :return : возвращает словарь (название отеля, адрес,
     фотографии отеля (если пользователь счёл необходимым их вывод) либо сообщение сервера
     """
 
     url_low = config('URL_LOW')
     lang = querystring["locale"]
     data = req_api(url_low, querystring, lang)
-    links_htmls = ("https://ru.hotels.com/ho{}" if lang == "ru_RU"
+    links_html = ("https://ru.hotels.com/ho{}" if lang == "ru_RU"
                    else "https://hotels.com/ho{}?pos=HCOM_US&locale=en_US")
 
     if data.get("ok"):
-        if parametrs['command'] == '/bestdeal':
+        if par_dict['command'] == '/bestdeal':
             if lang == 'ru_RU':
                 low_data = [d for d in data["ok"]['data']['body']['searchResults']['results']
-                            if parametrs['dist_min'] <= float(
-                        d['landmarks'][0]['distance'].split()[0].replace(',', '.')) <= parametrs['dist_max']]
+                            if par_dict['dist_min'] <= float(
+                        d['landmarks'][0]['distance'].split()[0].replace(',', '.')) <= par_dict['dist_max']]
             else:
                 low_data = [d for d in data["ok"]['data']['body']['searchResults']['results']
-                            if parametrs['dist_min'] <= float(
-                        d['landmarks'][0]['distance'].split()[0]) <= parametrs['dist_max']]
+                            if par_dict['dist_min'] <= float(
+                        d['landmarks'][0]['distance'].split()[0]) <= par_dict['dist_max']]
         else:
             low_data = [d for d in data["ok"]['data']['body']['searchResults']['results']]
         all_hotels = {}
@@ -220,8 +219,8 @@ def hotel_query(querystring: dict, parametrs: dict) -> dict:
                 price = price_parse(results["ratePlan"], lang, querystring['checkIn'], querystring['checkOut'])
             if querystring["pageSize"] != hotel_count:
                 photos = []
-                if parametrs['stat_photo']:
-                    data_photo = get_photos(results['id'], parametrs['count_photo'], lang)
+                if par_dict['stat_photo']:
+                    data_photo = get_photos(results['id'], par_dict['count_photo'], lang)
                     if len(data_photo) > 0:
                         photos = [link for link in data_photo]
 
@@ -233,7 +232,7 @@ def hotel_query(querystring: dict, parametrs: dict) -> dict:
                       f"📅 {loc_txt[lang][7]} {querystring['checkIn']} - {querystring['checkOut']}\n" \
                       f"💵 {loc_txt[lang][8]} <b>{price['price_day']}</b>\n" \
                       f"💵 {loc_txt[lang][9].format(price['day'])} <b>{price['price_total']}</b>\n" \
-                      f"🌍 {loc_txt[lang][10]} {links_htmls.format(results['id'])}\n\n"
+                      f"🌍 {loc_txt[lang][10]} {links_html.format(results['id'])}\n\n"
 
                 all_hotels[txt] = photos
 

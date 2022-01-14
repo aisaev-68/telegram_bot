@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 import sqlite3
 from sqlite3 import Error
 from telegram_bot_calendar import WYearTelegramCalendar, DAY
@@ -56,19 +53,19 @@ class Users:
         self.__id_city = idcity
 
     @property
-    def checkIn(self) -> str:
+    def check_in(self) -> str:
         return self.__checkIn
 
-    @checkIn.setter
-    def checkIn(self, in_date: str) -> None:
+    @check_in.setter
+    def check_in(self, in_date: str) -> None:
         self.__checkIn = in_date
 
     @property
-    def checkOut(self) -> str:
+    def check_out(self) -> str:
         return self.__checkOut
 
-    @checkOut.setter
-    def checkOut(self, out_date: str) -> None:
+    @check_out.setter
+    def check_out(self, out_date: str) -> None:
         self.__checkOut = out_date
 
     @property
@@ -159,14 +156,14 @@ class Users:
     def status_show_photo(self, status: bool) -> None:
         self.__status_show_photo = status
 
-    def query_string(self, idcity: str = None) -> dict:
+    def query_string(self, city_id: str = None) -> dict:
         """Функция формирует строку запроса в виде словаря
-        :param idcity: команды для формирования строки запроса по поиску ID города
+        :param city_id: команды для формирования строки запроса по поиску ID города
         возвращает строку запроса к API в виде словаря
 
         """
         querystring = {}
-        if idcity == 'city':
+        if city_id == 'city':
             querystring = {"query": self.__search_city, "locale": self.__language}
 
         elif self.__command == '/lowprice':
@@ -220,7 +217,7 @@ class Users:
                      'count_photo': self.__count_show_photo}
         return param
 
-    def clearCache(self) -> None:
+    def clear_cache(self) -> None:
         """Функция для очистки не нужных данных при формировании нового запроса"""
 
         self.__search_city: str = ''
